@@ -18,21 +18,22 @@ $newUsersToday = $newUsersTodayResult->fetch_assoc()['new_today'];
 $conn->close(); 
 ?>
 
+
 <h2>Admin Dashboard</h2>
 
-<nav> 
-    <ul>
-        <li><a href="manage_users.php">User Management</a></li>
-        <li><a href="manage_content.php">Content Management</a></li>
-        <li><a href="manage_pharmacies.php">Pharmacy Management</a></li>
-        <li><a href="data_analytics.php">Data Analytics</a></li>
-    </ul>
-</nav>
 
-<section id="dashboard-summary">
-    <h3>Summary</h3>
-    <ul>
-        <li>Total Users: <?php echo $totalUsers; ?></li> 
-        <li>New Users (Today): <?php echo $newUsersToday; ?></li>
-        </ul>
-</section>
+    <ul class="list-group">
+        <li class="list-group-item"><a href="manage_users.php">User Management</a></li>
+        <li class="list-group-item"><a href="manage_content.php">Content Management</a></li>
+        <li class="list-group-item"><a href="manage_pharmacies.php">Pharmacy Management</a></li>
+        <li class="list-group-item"><a href="data_analytics.php">Data Analytics</a></li>
+    </ul>
+
+    
+        <section id="dashboard-summary">
+            <h3>Summary</h3>
+            <ul class="list-group">
+                <li class="list-group-item">Total Users: <?php echo $totalUsers; ?></li> 
+                <li class="list-group-item">New Users (Today): <?php echo $newUsersToday; ?></li>
+                </ul>
+        </section>

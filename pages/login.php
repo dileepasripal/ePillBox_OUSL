@@ -1,26 +1,24 @@
-<div class="container">
-    <?php
+<?php
 
-include "../includes/header.php";
 // Initialize the session
 session_start();
- 
+
 // Check if the user is already logged in, if yes then redirect him to welcome page
 if(isset($_SESSION["loggedin"]) && $_SESSION["loggedin"] === true){
     header("location: home.php");
     exit;
 }
- 
+
 // Include config file
 require_once "../includes/db_connect.php";
- 
+
 // Define variables and initialize with empty values
 $username = $password = "";
 $username_err = $password_err = $login_err = "";
- 
+
 // Processing form data when form is submitted
 if($_SERVER["REQUEST_METHOD"] == "POST"){
- 
+
     // Check if username is empty
     if(empty(trim($_POST["username"]))){
         $username_err = "Please enter username.";
@@ -55,7 +53,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
                 // Check if username exists, if yes then verify password
                 if(mysqli_stmt_num_rows($stmt) == 1){                    
                     // Bind result variables
-                    mysqli_stmt_bind_result($stmt, $id, $username, $hashed_password,$role);
+                    mysqli_stmt_bind_result($stmt, $id, $username, $hashed_password, $role);
                     if(mysqli_stmt_fetch($stmt)){
                         if(password_verify($password, $hashed_password)){
                             // Password is correct, so start a new session
@@ -65,7 +63,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
                             $_SESSION["loggedin"] = true;
                             $_SESSION["id"] = $id;
                             $_SESSION["username"] = $username;  
-                            $_SESSION["role"] = $role;                          
+                            $_SESSION["role"] = $role;                      
                             
                             // Redirect user to welcome page
                             header("location: home.php");
@@ -91,7 +89,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
     mysqli_close($conn);
 }
 ?>
- 
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -99,12 +97,74 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
     <title>Login</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <style>
-        body{ font: 14px sans-serif; }
-        .wrapper{ width: 360px; padding: 20px; }
+        body {
+            font: 14px sans-serif; 
+            background-color: #f4f4f4; 
+            display: flex;
+            flex-direction: column; 
+            min-height: 100vh; 
+        }
+
+        .wrapper {
+            background: #fff;
+            border-radius: 5px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1); 
+            padding: 40px;
+            width: 360px;
+            margin: 50px auto; /* Center horizontally with top/bottom margin */
+            flex-grow: 1; 
+            width: 600px;
+        }
+
+        .wrapper h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px; 
+        }
+
+        .form-group label {
+            font-weight: bold;
+        }
+
+        .form-control {
+            border-radius: 3px; 
+        }
+
+        .btn-primary {
+            background-color: #007bff; 
+            border: none;
+            border-radius: 3px; 
+            padding: 10px 20px;
+            cursor: pointer;
+            display: block;
+            width: 100%; 
+        }
+
+        .btn-primary:hover {
+            background-color: #0069d9; 
+        }
+
+        .invalid-feedback {
+            color: #dc3545; 
+            font-size: 12px;
+        }
+
+        .wrapper p { /* For the "Don't have an account?" text */
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .wrapper a {
+            color: #000; 
+        }
     </style>
 </head>
 <body>
     <div class="wrapper">
+    <?php include "../includes/header.php";?>
         <h2>Login</h2>
         <p>Please fill in your credentials to login.</p>
 
@@ -130,6 +190,9 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
             </div>
             <p>Don't have an account? <a href="register.php">Sign up now</a>.</p>
         </form>
+        <?php include "../includes/footer.php"; ?>
     </div>
+
+     
 </body>
 </html>

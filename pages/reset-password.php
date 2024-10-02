@@ -1,4 +1,6 @@
 <?php
+
+include "../includes/header.php";
 // Initialize the session
 session_start();
  
@@ -70,15 +72,66 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
 }
 ?>
  
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>Reset Password</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <style>
-        body{ font: 14px sans-serif; }
-        .wrapper{ width: 360px; padding: 20px; }
+        body {
+            font: 14px sans-serif; 
+            background-color: #f4f4f4; 
+            display: flex;
+            flex-direction: column; 
+            min-height: 100vh; 
+        }
+
+        .wrapper {
+            background: #fff;
+            border-radius: 5px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1); 
+            padding: 40px;
+            width: 360px;
+            margin: 50px auto; /* Center horizontally with top/bottom margin */
+            flex-grow: 1; 
+        }
+
+        .wrapper h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px; 
+        }
+
+        .form-group label {
+            font-weight: bold;
+        }
+
+        .form-control {
+            border-radius: 3px; 
+        }
+
+        .btn-primary {
+            background-color: #007bff; 
+            border: none;
+            border-radius: 3px; 
+            padding: 10px 20px;
+            cursor: pointer;
+            display: block; 
+            width: 100%; 
+        }
+
+        .btn-primary:hover {
+            background-color: #0069d9; 
+        }
+
+        .invalid-feedback {
+            color: #dc3545; 
+            font-size: 12px;
+        }
     </style>
 </head>
 <body>
@@ -101,6 +154,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
                 <a class="btn btn-link ml-2" href="home.php">Cancel</a>
             </div>
         </form>
-    </div>    
+    </div>
+    <?php include "../includes/footer.php"; ?>  
 </body>
 </html>
