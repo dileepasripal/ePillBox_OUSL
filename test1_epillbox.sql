@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1:3306
--- Generation Time: Aug 28, 2024 at 11:43 AM
+-- Generation Time: Oct 02, 2024 at 04:58 AM
 -- Server version: 8.3.0
 -- PHP Version: 8.2.18
 
@@ -20,6 +20,29 @@ SET time_zone = "+00:00";
 --
 -- Database: `test1_epillbox`
 --
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `content`
+--
+
+DROP TABLE IF EXISTS `content`;
+CREATE TABLE IF NOT EXISTS `content` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `title` varchar(255) NOT NULL,
+  `body` text,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=MyISAM AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Dumping data for table `content`
+--
+
+INSERT INTO `content` (`id`, `title`, `body`, `created_at`, `updated_at`) VALUES
+(1, 'test content', 'aghfdhndhdh', '2024-10-02 03:01:28', '2024-10-02 03:01:28');
 
 -- --------------------------------------------------------
 
@@ -151,7 +174,16 @@ CREATE TABLE IF NOT EXISTS `prescriptions` (
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `user_id` (`user_id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=MyISAM AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Dumping data for table `prescriptions`
+--
+
+INSERT INTO `prescriptions` (`id`, `user_id`, `medication_name`, `dosage`, `frequency`, `start_date`, `end_date`, `special_instructions`, `doctor_name`, `created_at`, `updated_at`) VALUES
+(1, 1, 'penadol', '1', '3', '2024-10-02', '2024-10-04', '', 'DS', '2024-10-02 03:31:22', '2024-10-02 03:31:22'),
+(2, 1, 'penadol', '1', '3', '2024-10-02', '2024-10-04', '', 'DS', '2024-10-02 03:31:55', '2024-10-02 03:31:55'),
+(3, 1, 'penadol', '1', '3', '2024-10-02', '2024-10-04', '', 'DS', '2024-10-02 03:32:37', '2024-10-02 03:32:37');
 
 -- --------------------------------------------------------
 
@@ -203,19 +235,20 @@ CREATE TABLE IF NOT EXISTS `users` (
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `reset_token` varchar(255) DEFAULT NULL,
   `reset_token_expires_at` datetime DEFAULT NULL,
-  `role` enum('patient','provider','pharmacist','admin') NOT NULL DEFAULT 'patient',
+  `role` enum('patient','doctor','pharmacist','admin') CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT 'patient',
   PRIMARY KEY (`id`),
   UNIQUE KEY `email` (`username`)
-) ENGINE=MyISAM AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=MyISAM AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `users`
 --
 
 INSERT INTO `users` (`id`, `username`, `password`, `created_at`, `updated_at`, `reset_token`, `reset_token_expires_at`, `role`) VALUES
-(1, 'dileepasripal@gmail.com', '$2y$10$png8oiO4veIj4jYaKAVFnuNyHuL8SyzfJ3E9DbyLb7.A7GYNaZfnu', '2024-08-28 00:16:36', '2024-08-28 11:21:26', NULL, NULL, 'provider'),
+(1, 'dileepasripal@gmail.com', '$2y$10$png8oiO4veIj4jYaKAVFnuNyHuL8SyzfJ3E9DbyLb7.A7GYNaZfnu', '2024-08-28 00:16:36', '2024-10-02 02:52:33', NULL, NULL, 'doctor'),
 (2, 'admin@gmail.com', '$2y$10$27UXY0wL9dOsHql9zmo5jOjyxxInjl7tE13fysEnoFmT.muPWLEEa', '2024-08-28 01:26:43', '2024-08-28 09:20:48', NULL, NULL, 'admin'),
-(4, 'dileepasripal', '$2y$10$U1clo6GJQnC/J93tlOcVr.SxU58lQJI0Qx9ECHaK0x2hdGUaMyEve', '2024-08-28 09:15:00', '2024-08-28 10:27:12', NULL, NULL, 'provider');
+(4, 'dileepasripal', '$2y$10$U1clo6GJQnC/J93tlOcVr.SxU58lQJI0Qx9ECHaK0x2hdGUaMyEve', '2024-08-28 09:15:00', '2024-10-02 02:52:45', NULL, NULL, 'pharmacist'),
+(5, 'patient', '$2y$10$fnuUKX0IdgCnsZxJOQziK.G5kgq/RdfgSJQSxSgatPw6MlqM9ygMS', '2024-10-02 03:24:07', '2024-10-02 03:24:07', NULL, NULL, 'patient');
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
