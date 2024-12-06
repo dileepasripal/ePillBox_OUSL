@@ -62,19 +62,19 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
                             // Store data in session variables
                             $_SESSION["loggedin"] = true;
                             $_SESSION["id"] = $id;
-                            $_SESSION["username"] = $username;  
-                            $_SESSION["role"] = $role;                      
+                            $_SESSION["username"] = $username;
+                            $_SESSION["role"] = $role;
                             
                             // Redirect user to welcome page
                             header("location: home.php");
                         } else{
-                            // Password is not valid, display a generic error message
-                            $login_err = "Invalid username or password.";
+                            // Display a more specific error message
+                            $login_err = "Incorrect password.";
                         }
                     }
                 } else{
-                    // Username doesn't exist, display a generic error message
-                    $login_err = "Invalid username or password.";
+                    // Display a more specific error message
+                    $login_err = "Username not found.";
                 }
             } else{
                 echo "Oops! Something went wrong. Please try again later.";
@@ -98,7 +98,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <style>
         body {
-            font: 14px sans-serif; 
+            font: 14px sans-serif;
             background-color: #f4f4f4; 
             display: flex;
             flex-direction: column; 
@@ -111,9 +111,8 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
             box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1); 
             padding: 40px;
             width: 360px;
-            margin: 50px auto; /* Center horizontally with top/bottom margin */
-            flex-grow: 1; 
-            width: 600px;
+            margin: 50px auto; 
+            flex-grow: 1;
         }
 
         .wrapper h2 {
@@ -122,7 +121,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
         }
 
         .form-group {
-            margin-bottom: 20px; 
+            margin-bottom: 20px;
         }
 
         .form-group label {
@@ -130,41 +129,40 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
         }
 
         .form-control {
-            border-radius: 3px; 
+            border-radius: 3px;
         }
 
         .btn-primary {
-            background-color: #007bff; 
+            background-color: #007bff;
             border: none;
             border-radius: 3px; 
             padding: 10px 20px;
             cursor: pointer;
             display: block;
-            width: 100%; 
+            width: 100%;
         }
 
         .btn-primary:hover {
-            background-color: #0069d9; 
+            background-color: #0069d9;
         }
 
         .invalid-feedback {
-            color: #dc3545; 
+            color: #dc3545;
             font-size: 12px;
         }
 
-        .wrapper p { /* For the "Don't have an account?" text */
+        .wrapper p {
             text-align: center;
             margin-top: 20px;
         }
 
         .wrapper a {
-            color: #000; 
+            color: #000;
         }
     </style>
 </head>
 <body>
     <div class="wrapper">
-    <?php include "../includes/header.php";?>
         <h2>Login</h2>
         <p>Please fill in your credentials to login.</p>
 
@@ -190,9 +188,6 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
             </div>
             <p>Don't have an account? <a href="register.php">Sign up now</a>.</p>
         </form>
-        <?php include "../includes/footer.php"; ?>
     </div>
-
-     
 </body>
 </html>
