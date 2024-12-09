@@ -12,8 +12,8 @@ if(isset($_SESSION["loggedin"]) && $_SESSION["loggedin"] === true){
 require_once "../includes/db_connect.php";
 
 // Define variables and initialize with empty values
-$username = $password = $confirm_password = $role = "";
-$username_err = $password_err = $confirm_password_err = $role_err = "";
+$username = $password = $confirm_password = $role = $dob = $contact = "";
+$username_err = $password_err = $confirm_password_err = $role_err = $dob_err = $contact_err = "";
 
 // Processing form data when form is submitted
 if($_SERVER["REQUEST_METHOD"] == "POST"){
@@ -78,21 +78,35 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
     } else {
         $role = trim($_POST["role"]);
     }
+
+    // Validate date of birth
+    $dob = trim($_POST["dob"]);
+    if(empty($dob)){
+        $dob_err = "Please enter your date of birth.";
+    }
+
+    // Validate contact information
+    $contact = trim($_POST["contact"]);
+    if(empty($contact)){
+        $contact_err = "Please enter your contact information.";
+    }
     
     // Check input errors before inserting in database
-    if(empty($username_err) && empty($password_err) && empty($confirm_password_err) && empty($role_err)){
+    if(empty($username_err) && empty($password_err) && empty($confirm_password_err) && empty($role_err) && empty($dob_err) && empty($contact_err)){
         
         // Prepare an insert statement
-        $sql = "INSERT INTO users (username, password, role) VALUES (?, ?, ?)";
+        $sql = "INSERT INTO users (username, password, role, dob, contact) VALUES (?, ?, ?, ?, ?)";
          
         if($stmt = mysqli_prepare($conn, $sql)){
             // Bind variables to the prepared statement as parameters
-            mysqli_stmt_bind_param($stmt, "sss", $param_username, $param_password, $param_role);
+            mysqli_stmt_bind_param($stmt, "sssss", $param_username, $param_password, $param_role, $param_dob, $param_contact);
             
             // Set parameters
             $param_username = $username;
             $param_password = password_hash($password, PASSWORD_DEFAULT); // Creates a password hash
             $param_role = $role;
+            $param_dob = $dob;
+            $param_contact = $contact;
             
             // Attempt to execute the prepared statement
             if(mysqli_stmt_execute($stmt)){
@@ -181,7 +195,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
         .wrapper a {
             color: #000;
         }
-    </style>
+        </style>
 </head>
 <body>
     <div class="wrapper">
@@ -214,11 +228,21 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
                 <span class="invalid-feedback"><?php echo $role_err; ?></span>
             </div>
             <div class="form-group">
+                <label>Date of Birth</label>
+                <input type="date" name="dob" class="form-control <?php echo (!empty($dob_err)) ? 'is-invalid' : ''; ?>" value="<?php echo $dob; ?>">
+                <span class="invalid-feedback"><?php echo $dob_err; ?></span>
+            </div>
+            <div class="form-group">
+                <label>Contact Information</label>
+                <input type="text" name="contact" class="form-control <?php echo (!empty($contact_err)) ? 'is-invalid' : ''; ?>" value="<?php echo $contact; ?>">
+                <span class="invalid-feedback"><?php echo $contact_err; ?></span>
+            </div>
+            <div class="form-group">
                 <input type="submit" class="btn btn-primary" value="Submit">
                 <input type="reset" class="btn btn-secondary ml-2" value="Reset">
             </div>
             <p>Already have an account? <a href="login.php">Login here</a>.</p>
         </form>
-    </div>
+    </div>    
 </body>
 </html>
