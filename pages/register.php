@@ -1,15 +1,23 @@
+<?php
+// Initialize the session
+session_start();
 
-    <?php
+// Check if the user is already logged in, if yes then redirect him to welcome page
+if(isset($_SESSION["loggedin"]) && $_SESSION["loggedin"] === true){
+    header("location: home.php");
+    exit;
+}
+
 // Include config file
 require_once "../includes/db_connect.php";
- 
+
 // Define variables and initialize with empty values
-$username = $password = $confirm_password = "";
-$username_err = $password_err = $confirm_password_err = "";
- 
+$username = $password = $confirm_password = $role = "";
+$username_err = $password_err = $confirm_password_err = $role_err = "";
+
 // Processing form data when form is submitted
 if($_SERVER["REQUEST_METHOD"] == "POST"){
- 
+
     // Validate username
     if(empty(trim($_POST["username"]))){
         $username_err = "Please enter a username.";
@@ -49,7 +57,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
     if(empty(trim($_POST["password"]))){
         $password_err = "Please enter a password.";     
     } elseif(strlen(trim($_POST["password"])) < 6){
-        $password_err = "Password must have atleast 6 characters.";
+        $password_err = "Password must have at least 6 characters.";
     } else{
         $password = trim($_POST["password"]);
     }
@@ -64,20 +72,27 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
         }
     }
     
+    // Validate role
+    if(empty(trim($_POST["role"]))){
+        $role_err = "Please select a role.";
+    } else {
+        $role = trim($_POST["role"]);
+    }
+    
     // Check input errors before inserting in database
-    if(empty($username_err) && empty($password_err) && empty($confirm_password_err)){
+    if(empty($username_err) && empty($password_err) && empty($confirm_password_err) && empty($role_err)){
         
         // Prepare an insert statement
-        $sql = "INSERT INTO users (username, password,role) VALUES (?, ?,?)";
+        $sql = "INSERT INTO users (username, password, role) VALUES (?, ?, ?)";
          
         if($stmt = mysqli_prepare($conn, $sql)){
             // Bind variables to the prepared statement as parameters
-            mysqli_stmt_bind_param($stmt, "sss", $param_username, $param_password,$param_role);
+            mysqli_stmt_bind_param($stmt, "sss", $param_username, $param_password, $param_role);
             
             // Set parameters
             $param_username = $username;
             $param_password = password_hash($password, PASSWORD_DEFAULT); // Creates a password hash
-            $param_role = $_POST['role'];
+            $param_role = $role;
             
             // Attempt to execute the prepared statement
             if(mysqli_stmt_execute($stmt)){
@@ -91,9 +106,10 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
             mysqli_stmt_close($stmt);
         }
     }
-
+    
+    // Close connection
+    mysqli_close($conn);
 }
-
 ?>
 
 <!DOCTYPE html>
@@ -104,10 +120,8 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <style>
         body {
-            font: 
- 14px sans-serif;
-            background-color: 
- #f4f4f4;
+            font: 14px sans-serif;
+            background-color: #f4f4f4; 
             display: flex;
             flex-direction: column; 
             min-height: 100vh; 
@@ -116,12 +130,11 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
         .wrapper {
             background: #fff;
             border-radius: 5px;
-            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1); 
             padding: 40px;
-            width: 450px; 
-            margin: 50px auto; /* Center horizontally with top/bottom margin */
-            flex-grow: 1; 
-            width: 600px;
+            width: 360px;
+            margin: 50px auto; 
+            flex-grow: 1;
         }
 
         .wrapper h2 {
@@ -130,7 +143,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
         }
 
         .form-group {
-            margin-bottom: 20px; 
+            margin-bottom: 20px;
         }
 
         .form-group label {
@@ -138,38 +151,21 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
         }
 
         .form-control {
-            border-radius: 
- 3px;
+            border-radius: 3px;
         }
 
         .btn-primary {
             background-color: #007bff;
             border: none;
             border-radius: 3px; 
-
             padding: 10px 20px;
             cursor: pointer;
-            display: block; 
-            width: 100%; 
+            display: block;
+            width: 100%;
         }
 
         .btn-primary:hover {
             background-color: #0069d9;
-        }
-
-        .btn-secondary {
-            background-color: #6c757d; 
-            border: none;
-            border-radius: 3px;
-            padding: 10px 20px;
-            cursor: pointer;
-            color: #fff; 
-            display: block; 
-            width: 100%; 
-        }
-
-        .btn-secondary:hover {
-            background-color: #5a6268; 
         }
 
         .invalid-feedback {
@@ -177,7 +173,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
             font-size: 12px;
         }
 
-        .wrapper p { 
+        .wrapper p {
             text-align: center;
             margin-top: 20px;
         }
@@ -189,7 +185,6 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
 </head>
 <body>
     <div class="wrapper">
-        <?php include "../includes/header.php";?>
         <h2>Sign Up</h2>
         <p>Please fill this form to create an account.</p>
         <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post">
@@ -210,29 +205,20 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
             </div>
             <div class="form-group">
                 <label for="role">Role:</label>
-                <select id="role" name="role" class="form-control">
-                    <option value="patient">Patient</option>
-                    <option value="doctor">Doctor</option>
-                    <option value="pharmacist">Pharmacist</option>
+                <select name="role" id="role" class="form-control <?php echo (!empty($role_err)) ? 'is-invalid' : ''; ?>">
+                    <option value="">Select Role</option>
+                    <option value="patient" <?php if (isset($role) && $role == "patient") echo "selected"; ?>>Patient</option>
+                    <option value="doctor" <?php if (isset($role) && $role == "doctor") echo "selected"; ?>>Doctor</option>
+                    <option value="pharmacist" <?php if (isset($role) && $role == "pharmacist") echo "selected"; ?>>Pharmacist</option>
                 </select>
+                <span class="invalid-feedback"><?php echo $role_err; ?></span>
             </div>
             <div class="form-group">
                 <input type="submit" class="btn btn-primary" value="Submit">
-                <input type="reset" class="btn btn-secondary" value="Reset">
+                <input type="reset" class="btn btn-secondary ml-2" value="Reset">
             </div>
             <p>Already have an account? <a href="login.php">Login here</a>.</p>
         </form>
-        <?php
-$conn->close();
-include "../includes/footer.php";
-?>
     </div>
-    
 </body>
 </html>
-
-
-
-
-
-

@@ -1,39 +1,64 @@
 <?php
-// Database connection (assuming db_connect.php handles this)
-include '../includes/db_connect.php'; 
+// Include config file
+require_once "../includes/db_connect.php";
 
 // Fetch summary data
-$totalUsersQuery = "SELECT COUNT(*) AS total FROM users";
-$newUsersTodayQuery = "SELECT COUNT(*) AS new_today FROM users WHERE DATE(created_at) = CURDATE()";
-// ... (Add more queries for recent activity as needed, e.g., latest refill requests, messages, etc.)
+$sql = "SELECT COUNT(*) AS total_users FROM users";
+$result = $conn->query($sql);
+$row = $result->fetch_assoc();
+$totalUsers = $row['total_users'];
 
-$totalUsersResult = $conn->query($totalUsersQuery);
-$newUsersTodayResult = $conn->query($newUsersTodayQuery);
-// ... (Execute other queries)
+$today = date("Y-m-d");
+$sql = "SELECT COUNT(*) AS new_users_today FROM users WHERE DATE(created_at) = '$today'";
+$result = $conn->query($sql);
+$row = $result->fetch_assoc();
+$newUsersToday = $row['new_users_today'];
 
-$totalUsers = $totalUsersResult->fetch_assoc()['total'];
-$newUsersToday = $newUsersTodayResult->fetch_assoc()['new_today'];
-// ... (Fetch data from other query results)
+// ... (Add more queries for other summary data)
 
-$conn->close(); 
+// Close connection
+$conn->close();
 ?>
 
-
-<h2>Admin Dashboard</h2>
-
-
-    <ul class="list-group">
-        <li class="list-group-item"><a href="manage_users.php">User Management</a></li>
-        <li class="list-group-item"><a href="manage_content.php">Content Management</a></li>
-        <li class="list-group-item"><a href="manage_pharmacies.php">Pharmacy Management</a></li>
-        <li class="list-group-item"><a href="data_analytics.php">Data Analytics</a></li>
-    </ul>
-
-    
-        <section id="dashboard-summary">
-            <h3>Summary</h3>
-            <ul class="list-group">
-                <li class="list-group-item">Total Users: <?php echo $totalUsers; ?></li> 
-                <li class="list-group-item">New Users (Today): <?php echo $newUsersToday; ?></li>
-                </ul>
-        </section>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Dashboard</title>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <style>
+    .summary-item {
+      margin-bottom: 15px;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Admin Dashboard</h1>
+    <div class="row">
+      <div class="col-md-4">
+        <div class="summary-item">
+          <h3>Total Users</h3>
+          <p><?php echo $totalUsers; ?></p>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="summary-item">
+          <h3>New Users Today</h3>
+          <p><?php echo $newUsersToday; ?></p>
+        </div>
+      </div>
+      </div>
+      <h2>Admin Functions</h2>
+      <ul>
+        <li><a href="manage_users.php">User Management</a></li>
+        <li><a href="manage_content.php">Content Management</a></li>
+        <li><a href="manage_pharmacies.php">Pharmacy Management</a></li>
+        <li><a href="data_analytics.php">Data Analytics</a></li>
+      </ul>
+  </div>
+</body>
+</html>

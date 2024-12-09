@@ -1,15 +1,19 @@
 <?php
-// Database connection (replace with your actual credentials)
 $servername = "localhost";
 $username = "root";
-$password = "";
+$password = "admin";
 $dbname = "test1_epillbox";
 
-$conn = new mysqli($servername, $username, $password, $dbname);
+try {
+    $conn = new mysqli($servername, $username, $password, $dbname);
 
-// Check connection
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error); 
-
+    // Check connection
+    if ($conn->connect_error) {
+        throw new Exception("Connection failed: " . $conn->connect_error);
+    }
+} catch (Exception $e) {
+    // Log the error message or display a user-friendly error page
+    error_log("Database connection failed: " . $e->getMessage()); 
+    die("Oops! Something went wrong. Please try again later."); 
 }
 ?>
