@@ -160,6 +160,10 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
                 <input type="submit" class="btn btn-primary" value="Update Profile">
             </div>
         </form>
+
+        <p>
+            <a href="reset-password.php" class="btn btn-warning">Reset Your Password</a>
+        </p>
     </div>
     <?php include "../includes/footer.php"; ?>
 </body>
