@@ -1,7 +1,7 @@
 </main>
-    <footer class="bg-light py-3">
+    <footer class="bg-light py-4"> 
         <div class="container text-center">
-            <p>&copy; <?php echo date("Y"); ?> ePillbox. All rights reserved.</p>
+            <p class="mb-0">&copy; <?php echo date("Y"); ?> ePillbox. All rights reserved.</p> 
         </div>
     </footer>
     <script src="script.js"></script> 
