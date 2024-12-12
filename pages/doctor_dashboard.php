@@ -52,6 +52,23 @@ if (!$result) {
         <td>
           <a href="view_prescription_details.php?id=<?php echo htmlspecialchars($row["id"]); ?>" class="btn btn-primary btn-sm mr-2"><i class="fa fa-eye"></i> View Details</a>
           <a href="edit_prescription.php?id=<?php echo htmlspecialchars($row["id"]); ?>" class="btn btn-warning btn-sm mr-2"><i class="fa fa-pencil"></i> Edit</a>
+          <?php if (isset($_SESSION['success_message'])): ?>
+    <div class="alert alert-success">
+        <?php 
+        echo $_SESSION['success_message']; 
+        unset($_SESSION['success_message']);
+        ?>
+    </div>
+<?php endif; ?>
+
+<?php if (isset($_SESSION['error_message'])): ?>
+    <div class="alert alert-danger">
+        <?php 
+        echo $_SESSION['error_message']; 
+        unset($_SESSION['error_message']);
+        ?>
+    </div>
+<?php endif; ?>
           <a href="delete_prescription.php?id=<?php echo htmlspecialchars($row["id"]); ?>" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this prescription?');"><i class="fa fa-trash"></i> Delete</a>
 
         </td>

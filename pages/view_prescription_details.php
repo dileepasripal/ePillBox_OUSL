@@ -49,6 +49,27 @@ if ($user_role === 'doctor') {
             WHERE p.id = ? AND p.user_id = ?";
     $stmt = $conn->prepare($sql);
     $stmt->bind_param("ii", $prescription_id, $user_id);
+} else if ($user_role === 'pharmacist') {
+    $sql = "SELECT p.*, 
+            u.username AS patient_name,
+            u.email AS patient_email,
+            u.contact AS patient_contact,
+            d.username AS doctor_name,
+            d.specialization AS doctor_specialization,
+            d.hospital AS doctor_hospital,
+            ph.name AS pharmacy_name,
+            ph.address AS pharmacy_address,
+            ph.contact_information AS pharmacy_contact
+            FROM prescriptions p
+            JOIN users u ON p.user_id = u.id
+            JOIN users du ON p.doctor_id = du.id
+            JOIN doctors d ON du.id = d.user_id
+            JOIN pharmacies ph ON p.pharmacy_id = ph.pharmacy_id
+            WHERE p.id = ? AND ph.pharmacy_id = (
+                SELECT pharmacy_id FROM pharmacists WHERE user_id = ?
+            )";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("ii", $prescription_id, $user_id);
 } else {
     header("Location: login.php");
     exit;
@@ -58,7 +79,7 @@ $stmt->execute();
 $result = $stmt->get_result();
 
 if ($result->num_rows !== 1) {
-    header("Location: " . ($user_role === 'doctor' ? 'doctor_dashboard.php' : 'patient_dashboard.php'));
+    header("Location: home.php");
     exit;
 }
 
@@ -152,7 +173,7 @@ $prescription = $result->fetch_assoc();
             <?php endif; ?>
         </div>
 
-        <?php if ($user_role === 'doctor'): ?>
+        <?php if ($user_role === 'doctor' || $user_role === 'pharmacist'): ?>
         <div class="prescription-details">
             <h3 class="section-header">
                 <i class="fas fa-user-circle"></i> Patient Information
@@ -163,7 +184,7 @@ $prescription = $result->fetch_assoc();
         </div>
         <?php endif; ?>
 
-        <?php if ($user_role === 'patient'): ?>
+        <?php if ($user_role === 'patient' || $user_role === 'pharmacist'): ?>
         <div class="prescription-details">
             <h3 class="section-header">
                 <i class="fas fa-user-md"></i> Doctor Information
@@ -184,10 +205,10 @@ $prescription = $result->fetch_assoc();
         </div>
 
         <div class="mt-4">
-            <a href="<?php echo $user_role === 'doctor' ? 'home.php' : 'home.php'; ?>" 
-               class="btn btn-secondary">
+            <a href="home.php" class="btn btn-secondary">
                 <i class="fas fa-arrow-left"></i> Back to Dashboard
             </a>
+            
             <?php if ($user_role === 'doctor'): ?>
             <a href="edit_prescription.php?id=<?php echo escape($prescription_id); ?>" 
                class="btn btn-warning">
@@ -199,6 +220,19 @@ $prescription = $result->fetch_assoc();
             <a href="request_refill.php?id=<?php echo escape($prescription_id); ?>" 
                class="btn btn-primary">
                 <i class="fas fa-sync"></i> Request Refill
+            </a>
+            <?php endif; ?>
+
+            <?php if ($user_role === 'pharmacist' && $prescription["refill_status"] === 'refill_requested' && $prescription["request_status"] === 'pending'): ?>
+            <a href="approve_refill?id=<?php echo escape($prescription_id); ?>" 
+               class="btn btn-success" 
+               onclick="return confirm('Are you sure you want to approve this refill request?');">
+                <i class="fas fa-check"></i> Approve Refill
+            </a>
+            <a href="reject_refill?id=<?php echo escape($prescription_id); ?>" 
+               class="btn btn-danger"
+               onclick="return confirm('Are you sure you want to reject this refill request?');">
+                <i class="fas fa-times"></i> Reject Refill
             </a>
             <?php endif; ?>
         </div>

@@ -1,156 +1,209 @@
 <?php
-// Initialize the session
 session_start();
 
-// Check if the user is logged in, if not then redirect him to login page
-if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
+// Check if user is logged in and is admin
+if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true || $_SESSION["role"] !== 'admin') {
     header("location: login.php");
     exit;
 }
 
-// Check if the user has the 'admin' role, if not then redirect to home page
-if($_SESSION["role"] !== 'admin'){
-    header("location: home.php");
-    exit;
-}
-
-// Include config file
 require_once "../includes/db_connect.php";
 
-// --- Fetch actual data from your database ---
+// Get the selected date (default to today if not specified)
+$selected_date = isset($_GET['date']) ? $_GET['date'] : date('Y-m-d');
 
-// Example 1: User Sign-ups Over Time (Monthly)
-$monthlySignups = [];
-$sql = "SELECT DATE_FORMAT(created_at, '%Y-%m') AS month, COUNT(*) AS count FROM users GROUP BY month ORDER BY month";
-$result = $conn->query($sql);
-if ($result) {
-    while ($row = $result->fetch_assoc()) {
-        $monthlySignups[] = array($row['month'], (int)$row['count']);
-    }
-} else {
-    echo "Error fetching monthly sign-ups: " . $conn->error;
-}
+// Fetch daily statistics
+$stats_sql = "SELECT 
+    COUNT(CASE WHEN DATE(created_at) = ? THEN 1 END) as total_prescriptions,
+    COUNT(CASE WHEN DATE(created_at) = ? AND refill_status = 'new' THEN 1 END) as new_prescriptions,
+    COUNT(CASE WHEN DATE(updated_at) = ? AND refill_status = 'refill_requested' THEN 1 END) as refill_requests,
+    COUNT(CASE WHEN DATE(created_at) = ? THEN 1 END) as registered_users
+FROM prescriptions 
+CROSS JOIN (SELECT COUNT(*) as registered_users FROM users WHERE DATE(created_at) = ?) as u";
 
-// Example 2: Prescriptions by Month
-$prescriptionsByMonth = [];
-$sql = "SELECT DATE_FORMAT(start_date, '%Y-%m') AS month, COUNT(*) AS count FROM prescriptions GROUP BY month ORDER BY month";
-$result = $conn->query($sql);
-if ($result) {
-    while ($row = $result->fetch_assoc()) {
-        $prescriptionsByMonth[] = array($row['month'], (int)$row['count']);
-    }
-} else {
-    echo "Error fetching prescriptions by month: " . $conn->error;
-}
+$stats_stmt = $conn->prepare($stats_sql);
+$stats_stmt->bind_param("sssss", $selected_date, $selected_date, $selected_date, $selected_date, $selected_date);
+$stats_stmt->execute();
+$daily_stats = $stats_stmt->get_result()->fetch_assoc();
 
-// Close connection
-$conn->close();
+// Fetch detailed activity log for the selected date
+$activity_sql = "SELECT 
+    p.id,
+    p.medication_name,
+    p.refill_status,
+    p.request_status,
+    p.created_at,
+    p.updated_at,
+    u.username as patient_name,
+    d.username as doctor_name,
+    ph.name as pharmacy_name
+FROM prescriptions p
+JOIN users u ON p.user_id = u.id
+JOIN users du ON p.doctor_id = du.id
+JOIN doctors d ON du.id = d.user_id
+JOIN pharmacies ph ON p.pharmacy_id = ph.pharmacy_id
+WHERE DATE(p.created_at) = ? OR DATE(p.updated_at) = ?
+ORDER BY p.updated_at DESC";
 
-// Prepare data for Google Charts
-$signupsData = array_merge(array(array('Month', 'Sign-ups')), $monthlySignups);
-$prescriptionsData = array_merge(array(array('Month', 'Prescriptions')), $prescriptionsByMonth);
-
+$activity_stmt = $conn->prepare($activity_sql);
+$activity_stmt->bind_param("ss", $selected_date, $selected_date);
+$activity_stmt->execute();
+$activities = $activity_stmt->get_result();
 ?>
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Data Analytics</title>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css?family=Roboto:400,700&display=swap" rel="stylesheet">
-    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
-    <script type="text/javascript">
-        google.charts.load('current', {'packages':['corechart']});
-        google.charts.setOnLoadCallback(drawCharts);
-
-        function drawCharts() {
-            // Draw sign-ups chart
-            var signupsData = google.visualization.arrayToDataTable(<?php echo json_encode($signupsData); ?>);
-            var signupsOptions = {
-                title: 'User Sign-ups Over Time',
-                curveType: 'function',
-                legend: { position: 'bottom' }
-            };
-            var signupsChart = new google.visualization.LineChart(document.getElementById('signups_chart'));
-            signupsChart.draw(signupsData, signupsOptions);
-
-            // Draw prescriptions chart
-            var prescriptionsData = google.visualization.arrayToDataTable(<?php echo json_encode($prescriptionsData); ?>);
-            var prescriptionsOptions = {
-                title: 'Prescriptions by Month',
-                curveType: 'function',
-                legend: { position: 'bottom' }
-            };
-            var prescriptionsChart = new google.visualization.LineChart(document.getElementById('prescriptions_chart'));
-            prescriptionsChart.draw(prescriptionsData, prescriptionsOptions);
-
-            // ... (Add more chart drawing functions as needed) ...
-        }
-    </script>
-    <style>
-        body {
-            font: 14px sans-serif;
-            background-color: #f4f4f4;
-            display: flex;
-            flex-direction: column; 
-            min-height: 100vh; 
-        }
-
-        .wrapper {
-            background: #fff;
-            border-radius: 5px;
-            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
-            padding: 40px;
-            width: 80%;
-            max-width: 1200px; 
-            margin: 50px auto; 
-            flex-grow: 1; 
-            width: 1000px;
-        }
-
-        .wrapper h2 {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-
-        .wrapper .btn {
-            display: inline-block; 
-            margin-bottom: 10px; 
-            margin-right: 10px; 
-        }
-
-        .wrapper a {
-            color: #fff; 
-        }
-
-        .table {
-            width: 100%;
-            max-width: 100%; 
-            margin-bottom: 20px;
-        }
-
-        .table th, .table td {
-            padding: 10px;
-            vertical-align: middle; 
-        }
-        .wrapper a {
-            color: #000; 
-        }
-        </style>
-</head>
-<body>
-    <div class="wrapper">
-        <?php include "../includes/header.php"; ?>
-
-        <h2>Data Analytics</h2>
-
-        <div id="signups_chart" style="width: 900px; height: 500px"></div>
-
-        <div id="prescriptions_chart" style="width: 900px; height: 500px"></div>
-
-        <?php include "../includes/footer.php"; ?>
+<div class="container-fluid px-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="mt-4">Daily Activity Report</h1>
+        <a href="?page=admin_dashboard" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Dashboard
+        </a>
     </div>
-</body>
-</html>
+
+    <!-- Date Selection -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form class="row align-items-center" method="GET">
+                <input type="hidden" name="page" value="daily_activity">
+                <div class="col-md-3">
+                    <label for="date" class="form-label">Select Date</label>
+                    <input type="date" class="form-control" id="date" name="date" 
+                           value="<?php echo $selected_date; ?>" max="<?php echo date('Y-m-d'); ?>"
+                           onchange="this.form.submit()">
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row">
+        <div class="col-xl-3 col-md-6">
+            <div class="card bg-primary text-white mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <div class="small">Total Prescriptions</div>
+                            <div class="h3"><?php echo $daily_stats['total_prescriptions']; ?></div>
+                        </div>
+                        <i class="fas fa-prescription-bottle-alt fa-2x text-white-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card bg-success text-white mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <div class="small">New Prescriptions</div>
+                            <div class="h3"><?php echo $daily_stats['new_prescriptions']; ?></div>
+                        </div>
+                        <i class="fas fa-file-medical fa-2x text-white-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card bg-warning text-white mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <div class="small">Refill Requests</div>
+                            <div class="h3"><?php echo $daily_stats['refill_requests']; ?></div>
+                        </div>
+                        <i class="fas fa-sync fa-2x text-white-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card bg-info text-white mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <div class="small">New Users</div>
+                            <div class="h3"><?php echo $daily_stats['registered_users']; ?></div>
+                        </div>
+                        <i class="fas fa-user-plus fa-2x text-white-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Activity Log -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <i class="fas fa-history me-1"></i>
+            Detailed Activity Log for <?php echo date('F d, Y', strtotime($selected_date)); ?>
+        </div>
+        <div class="card-body">
+            <?php if($activities->num_rows > 0): ?>
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover">
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Patient</th>
+                                <th>Doctor</th>
+                                <th>Pharmacy</th>
+                                <th>Medication</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php while($row = $activities->fetch_assoc()): ?>
+                                <tr>
+                                    <td><?php echo date('H:i:s', strtotime($row['updated_at'])); ?></td>
+                                    <td><?php echo htmlspecialchars($row['patient_name']); ?></td>
+                                    <td><?php echo htmlspecialchars($row['doctor_name']); ?></td>
+                                    <td><?php echo htmlspecialchars($row['pharmacy_name']); ?></td>
+                                    <td><?php echo htmlspecialchars($row['medication_name']); ?></td>
+                                    <td>
+                                        <span class="badge <?php 
+                                            echo $row['refill_status'] === 'new' ? 'bg-success' : 
+                                                ($row['refill_status'] === 'refill_requested' ? 'bg-warning' : 'bg-info'); 
+                                        ?>">
+                                            <?php echo ucfirst(str_replace('_', ' ', $row['refill_status'])); ?>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <a href="?page=view_prescription_details&id=<?php echo $row['id']; ?>" 
+                                           class="btn btn-sm btn-primary">
+                                            <i class="fas fa-eye"></i> View
+                                        </a>
+                                    </td>
+                                </tr>
+                            <?php endwhile; ?>
+                        </tbody>
+                    </table>
+                </div>
+            <?php else: ?>
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> No activities recorded for this date.
+                </div>
+            <?php endif; ?>
+        </div>
+    </div>
+</div>
+
+<style>
+.card {
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+}
+.card-header {
+    background-color: #f8f9fc;
+    border-bottom: 1px solid #e3e6f0;
+}
+.table th {
+    background-color: #f8f9fa;
+}
+</style>
+
+<?php
+$stats_stmt->close();
+$activity_stmt->close();
+$conn->close();
+?>
