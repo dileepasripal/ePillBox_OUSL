@@ -88,7 +88,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
             mysqli_stmt_close($stmt);
         }
     }
-
+    
     
 }
 ?>
@@ -99,54 +99,92 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
     <meta charset="UTF-8">
     <title>Pharmacy Management</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Roboto:400,700&display=swap" rel="stylesheet">
     <style>
         body {
-            font: 14px sans-serif;
-            background-color: #f4f4f4;
-            display: flex;
-            flex-direction: column; 
-            min-height: 100vh; 
+            font-family: 'Roboto', sans-serif;
+            background-color: #f8f9fa;
         }
 
         .wrapper {
             background: #fff;
-            border-radius: 5px;
-            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
             padding: 40px;
             width: 80%;
-            max-width: 1200px; 
-            margin: 50px auto; 
-            flex-grow: 1; 
-            width: 800px;
+            max-width: 1200px;
+            margin: 30px auto;
         }
 
-        .wrapper h2 {
+        h2 {
             text-align: center;
+            margin-bottom: 30px;
+            color: #343a40;
+            font-weight: 700;
+        }
+
+        h3 {
+            color: #343a40;
+            font-weight: 700;
             margin-bottom: 20px;
         }
 
-        .wrapper .btn {
-            display: inline-block; 
-            margin-bottom: 10px; 
-            margin-right: 10px; 
+        .form-group {
+            margin-bottom: 20px;
         }
 
-        .wrapper a {
-            color: #fff; 
+        .form-control {
+            border-radius: 5px;
+        }
+
+        .btn-primary {
+            background-color: #007bff;
+            border: none;
+            border-radius: 5px;
+            padding: 10px 20px;
+            transition: background-color 0.2s ease;
+        }
+
+        .btn-primary:hover {
+            background-color: #0062cc;
         }
 
         .table {
             width: 100%;
-            max-width: 100%; 
+            max-width: 100%;
+            margin-top: 20px;
             margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            border-collapse: separate;
+            border-spacing: 0 10px;
         }
 
         .table th, .table td {
-            padding: 10px;
-            vertical-align: middle; 
+            padding: 15px;
+            vertical-align: middle;
+            background-color: #fff;
+            border-radius: 5px;
         }
-        .wrapper a {
-            color: #000; 
+
+        .table th {
+            background-color: #f8f9fa;
+            font-weight: 700;
+            color: #343a40;
+        }
+
+        .table-bordered th,
+        .table-bordered td {
+            border: none;
+        }
+
+        .btn-sm {
+            padding: 5px 10px;
+            font-size: 0.8rem;
+        }
+
+        .fa {
+            margin-right: 5px;
         }
     </style>
 </head>
@@ -162,7 +200,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
                 <label>Name</label>
                 <input type="text" name="name" class="form-control <?php echo (!empty($name_err)) ? 'is-invalid' : ''; ?>" value="<?php echo $name; ?>">
                 <span class="invalid-feedback"><?php echo $name_err; ?></span>
-            </div>    
+            </div>
             <div class="form-group">
                 <label>Address</label>
                 <textarea name="address" class="form-control <?php echo (!empty($address_err)) ? 'is-invalid' : ''; ?>"><?php echo $address; ?></textarea>
@@ -196,7 +234,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
 
         <?php
         // Fetch all pharmacies from the database
-        $sql = "SELECT id, name, address, latitude, longitude, contact_information, opening_hours FROM pharmacies"; 
+        $sql = "SELECT id, name, address, latitude, longitude, contact_information, opening_hours FROM pharmacies";
         $result = $conn->query($sql);
 
         // Error handling
@@ -205,7 +243,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
         }
         ?>
 
-        <table class="table table-bordered"> 
+        <table class="table table-bordered">
             <thead>
                 <tr>
                     <th>ID</th>
@@ -221,16 +259,16 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
             <tbody>
                 <?php while ($row = $result->fetch_assoc()) { ?>
                     <tr>
-                        <td><?php echo htmlspecialchars($row["id"]); ?></td> 
-                        <td><?php echo htmlspecialchars($row["name"]); ?></td> 
-                        <td><?php echo htmlspecialchars($row["address"]); ?></td> 
-                        <td><?php echo htmlspecialchars($row["latitude"]); ?></td> 
-                        <td><?php echo htmlspecialchars($row["longitude"]); ?></td> 
-                        <td><?php echo htmlspecialchars($row["contact_information"]); ?></td> 
-                        <td><?php echo htmlspecialchars($row["opening_hours"]); ?></td> 
+                        <td><?php echo htmlspecialchars($row["id"] ?? ''); ?></td>
+                        <td><?php echo htmlspecialchars($row["name"] ?? ''); ?></td>
+                        <td><?php echo htmlspecialchars($row["address"] ?? ''); ?></td>
+                        <td><?php echo htmlspecialchars($row["latitude"] ?? ''); ?></td>
+                        <td><?php echo htmlspecialchars($row["longitude"] ?? ''); ?></td>
+                        <td><?php echo htmlspecialchars($row["contact_information"] ?? ''); ?></td>
+                        <td><?php echo htmlspecialchars($row["opening_hours"] ?? ''); ?></td>
                         <td>
-                            <a href="edit_pharmacy.php?id=<?php echo htmlspecialchars($row["id"]); ?>">Edit</a> |
-                            <a href="delete_pharmacy.php?id=<?php echo htmlspecialchars($row["id"]); ?>" onclick="return confirm('Are you sure you want to delete this pharmacy?');">Delete</a>
+                            <a href="edit_pharmacy.php?id=<?php echo htmlspecialchars($row["id"] ?? ''); ?>" class="btn btn-primary btn-sm mr-2"><i class="fa fa-pencil"></i> Edit</a>
+                            <a href="delete_pharmacy.php?id=<?php echo htmlspecialchars($row["id"] ?? ''); ?>" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this pharmacy?');"><i class="fa fa-trash"></i> Delete</a>
                         </td>
                     </tr>
                 <?php } ?>
@@ -239,7 +277,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
 
         <?php
         // Close connection
-    mysqli_close($conn);
+        mysqli_close($conn);
 
         include "../includes/footer.php";
         ?>

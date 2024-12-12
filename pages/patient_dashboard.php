@@ -5,7 +5,10 @@ require_once "../includes/db_connect.php";
 
 // Fetch patient's prescriptions
 $patient_id = $_SESSION["id"];
-$sql = "SELECT * FROM prescriptions WHERE user_id = $patient_id";
+$sql = "SELECT p.*, u.username AS doctor_name 
+        FROM prescriptions p
+        JOIN users u ON p.doctor_name = u.id 
+        WHERE p.user_id = $patient_id";
 $result = $conn->query($sql);
 
 // Error handling
@@ -14,12 +17,12 @@ if (!$result) {
 }
 ?>
 
-        <h2>Patient Dashboard</h2>
+<h2>Patient Dashboard</h2>
 
         <h3>My Prescriptions</h3>
 
         <?php if ($result->num_rows > 0) { ?>
-        <table class="table table-bordered"> 
+        <table class="table table-bordered">
             <thead>
                 <tr>
                     <th>Medication Name</th>
@@ -29,22 +32,22 @@ if (!$result) {
                     <th>End Date</th>
                     <th>Special Instructions</th>
                     <th>Doctor Name</th>
-                    <th>Actions</th> 
+                    <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
                 <?php while ($row = $result->fetch_assoc()) { ?>
                     <tr>
-                        <td><?php echo htmlspecialchars($row["medication_name"]); ?></td> 
-                        <td><?php echo htmlspecialchars($row["dosage"]); ?></td> 
-                        <td><?php echo htmlspecialchars($row["frequency"]); ?></td> 
-                        <td><?php echo htmlspecialchars($row["start_date"]); ?></td> 
-                        <td><?php echo htmlspecialchars($row["end_date"]); ?></td> 
-                        <td><?php echo htmlspecialchars($row["special_instructions"]); ?></td> 
-                        <td><?php echo htmlspecialchars($row["doctor_name"]); ?></td> 
+                        <td><?php echo htmlspecialchars($row["medication_name"]); ?></td>
+                        <td><?php echo htmlspecialchars($row["dosage"]); ?></td>
+                        <td><?php echo htmlspecialchars($row["frequency"]); ?></td>
+                        <td><?php echo htmlspecialchars($row["start_date"]); ?></td>
+                        <td><?php echo htmlspecialchars($row["end_date"]); ?></td>
+                        <td><?php echo htmlspecialchars($row["special_instructions"]); ?></td>
+                        <td><?php echo htmlspecialchars($row["doctor_name"]); ?></td>
                         <td>
-                            <a href="view_prescription_details.php?id=<?php echo htmlspecialchars($row["id"]); ?>">View Details</a> | 
-                            <a href="request_refill.php?id=<?php echo htmlspecialchars($row["id"]); ?>">Request Refill</a> 
+                            <a href="view_prescription_details.php?id=<?php echo htmlspecialchars($row["id"]); ?>" class="btn btn-primary btn-sm mr-2"><i class="fa fa-eye"></i> View Details</a> |
+                            <a href="refill_request.php?id=<?php echo htmlspecialchars($row["id"]); ?>" class="btn btn-success btn-sm"><i class="fa fa-repeat"></i> Request Refill</a>
                         </td>
                     </tr>
                 <?php } ?>
@@ -56,5 +59,4 @@ if (!$result) {
 
         <?php
         $conn->close();
-        
         ?>

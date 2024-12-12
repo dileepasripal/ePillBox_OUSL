@@ -1,18 +1,24 @@
 <?php
+session_start();
+
 // Check if the user is logged in and a prescription ID is provided
-if (!isset($_SESSION['user_id']) || !isset($_GET['id'])) {
-    header("Location: index.php?page=view_prescriptions"); 
+if (!isset($_SESSION['id']) || !isset($_GET['id'])) {
+    header("Location: patient_dashboard.php"); // Redirect to patient dashboard if no prescription ID or not logged in
     exit;
 }
 
-// Database connection (reuse the same connection code from register.php)
+// Include config file
+require_once "../includes/db_connect.php";
 
 // Fetch prescription details from the database
 $prescription_id = $_GET['id'];
-$user_id = $_SESSION['user_id'];
-$sql = "SELECT * FROM prescriptions WHERE id = ? AND user_id = ?";
+$user_id = $_SESSION['id'];
+$sql = "SELECT p.*, u.username AS doctor_name 
+        FROM prescriptions p
+        JOIN users u ON p.doctor_name = u.id
+        WHERE p.id = ? AND p.user_id = ?"; // Make sure to check user_id as well
 $stmt = $conn->prepare($sql);
-$stmt->bind_param("ii", $prescription_id, $user_id); 
+$stmt->bind_param("ii", $prescription_id, $user_id);
 $stmt->execute();
 $result = $stmt->get_result();
 
@@ -20,21 +26,87 @@ if ($result->num_rows == 1) {
     $prescription_data = $result->fetch_assoc();
 } else {
     // Handle the case where the prescription is not found or doesn't belong to the user
-    die("Prescription not found."); 
+    header("Location: patient_dashboard.php"); // Redirect to patient dashboard if prescription not found
+    exit;
 }
 
 $stmt->close();
 $conn->close();
 ?>
 
-<h2>Prescription Details</h2>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Prescription Details</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Roboto:400,700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f8f9fa;
+        }
 
-<p><strong>Medication Name:</strong> <?php echo $prescription_data["medication_name"]; ?></p>
-<p><strong>Dosage:</strong> <?php echo $prescription_data["dosage"]; ?></p>
-<p><strong>Frequency:</strong> <?php echo $prescription_data["frequency"]; ?></p>
-<p><strong>Start Date:</strong> <?php echo $prescription_data["start_date"]; ?></p>
-<p><strong>End Date:</strong> <?php echo $prescription_data["end_date"]; ?></p>
-<p><strong>Special Instructions:</strong> <?php echo $prescription_data["special_instructions"]; ?></p>
-<p><strong>Doctor's Name:</strong> <?php echo $prescription_data["doctor_name"]; ?></p>
+        .wrapper {
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            width: 80%;
+            max-width: 800px;
+            margin: 30px auto;
+        }
 
-<a href="index.php?page=view_prescriptions">Back to Prescriptions</a>
+        h2 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #343a40;
+            font-weight: 700;
+        }
+
+        p {
+            margin-bottom: 10px;
+        }
+
+        strong {
+            font-weight: 700;
+        }
+
+        .btn {
+            border-radius: 5px;
+            padding: 10px 20px;
+            transition: background-color 0.2s ease;
+        }
+
+        .btn-primary {
+            background-color: #007bff;
+            border-color: #007bff;
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            background-color: #0062cc;
+            border-color: #0062cc;
+        }
+    </style>
+</head>
+<body>
+    <div class="wrapper">
+        <?php include "../includes/header.php"; ?>
+
+        <h2>Prescription Details</h2>
+
+        <p><strong>Medication Name:</strong> <?php echo htmlspecialchars($prescription_data["medication_name"]); ?></p>
+        <p><strong>Dosage:</strong> <?php echo htmlspecialchars($prescription_data["dosage"]); ?></p>
+        <p><strong>Frequency:</strong> <?php echo htmlspecialchars($prescription_data["frequency"]); ?></p>
+        <p><strong>Start Date:</strong> <?php echo htmlspecialchars($prescription_data["start_date"]); ?></p>
+        <p><strong>End Date:</strong> <?php echo htmlspecialchars($prescription_data["end_date"]); ?></p>
+        <p><strong>Special Instructions:</strong> <?php echo htmlspecialchars($prescription_data["special_instructions"]); ?></p>
+        <p><strong>Doctor's Name:</strong> <?php echo htmlspecialchars($prescription_data["doctor_name"]); ?></p>
+
+
+        <?php include "../includes/footer.php"; ?>
+    </div>
+</body>
+</html>

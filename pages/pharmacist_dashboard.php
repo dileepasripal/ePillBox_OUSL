@@ -20,41 +20,41 @@ if (!$result) {
 
 
 
-        <h2>Pharmacist Dashboard</h2>
+<h2>Pharmacist Dashboard</h2>
 
-        <h3>Refill Requests</h3>
+<h3>Refill Requests</h3>
 
-        <?php if ($result->num_rows > 0) { ?>
-        <table class="table table-bordered"> 
-            <thead>
-                <tr>
-                    <th>Request ID</th>
-                    <th>Patient Name</th>
-                    <th>Medication</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php while ($row = $result->fetch_assoc()) { ?>
-                    <tr>
-                        <td><?php echo htmlspecialchars($row["id"]); ?></td> 
-                        <td><?php echo htmlspecialchars($row["patient_name"]); ?></td> 
-                        <td><?php echo htmlspecialchars($row["medication_name"]); ?></td> 
-                        <td><?php echo htmlspecialchars($row["status"]); ?></td> 
-                        <td>
-                            <a href="approve_refill.php?id=<?php echo htmlspecialchars($row["id"]); ?>">Approve</a> |
-                            <a href="reject_refill.php?id=<?php echo htmlspecialchars($row["id"]); ?>">Reject</a>
-                        </td>
-                    </tr>
-                <?php } ?>
-            </tbody>
-        </table>
-        <?php } else { ?>
-            <p>No refill requests at this time.</p>
+<?php if ($result->num_rows > 0) { ?>
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>Request ID</th>
+            <th>Patient Name</th>
+            <th>Medication</th>
+            <th>Status</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        <?php while ($row = $result->fetch_assoc()) { ?>
+            <tr>
+                <td><?php echo htmlspecialchars($row["id"]); ?></td>
+                <td><?php echo htmlspecialchars($row["patient_name"]); ?></td>
+                <td><?php echo htmlspecialchars($row["medication_name"]); ?></td>
+                <td><?php echo htmlspecialchars($row["status"]); ?></td>
+                <td>
+                    <a href="approve_refill.php?id=<?php echo htmlspecialchars($row["id"]); ?>" class="btn btn-success btn-sm mr-2"><i class="fa fa-check"></i> Approve</a>
+                    <a href="reject_refill.php?id=<?php echo htmlspecialchars($row["id"]); ?>" class="btn btn-danger btn-sm"><i class="fa fa-times"></i> Reject</a>
+                </td>
+            </tr>
         <?php } ?>
+    </tbody>
+</table>
+<?php } else { ?>
+    <p>No refill requests at this time.</p>
+<?php } ?>
 
-        <?php
-        $conn->close();
-        ?>
+<?php
+$conn->close();
+?>
 

@@ -17,19 +17,39 @@ if($_SESSION["role"] !== 'admin'){
 // Include config file
 require_once "../includes/db_connect.php";
 
-// Sample data for the chart (replace with actual data from your database)
-$data = array(
-    array('Month', 'Sign-ups'),
-    array('Jan', 100),
-    array('Feb', 150),
-    array('Mar', 200),
-    array('Apr', 250),
-    array('May', 300)
-    // ... more data
-);
+// --- Fetch actual data from your database ---
 
-// Convert data to JSON format for the Google Chart
-$data_json = json_encode($data);
+// Example 1: User Sign-ups Over Time (Monthly)
+$monthlySignups = [];
+$sql = "SELECT DATE_FORMAT(created_at, '%Y-%m') AS month, COUNT(*) AS count FROM users GROUP BY month ORDER BY month";
+$result = $conn->query($sql);
+if ($result) {
+    while ($row = $result->fetch_assoc()) {
+        $monthlySignups[] = array($row['month'], (int)$row['count']);
+    }
+} else {
+    echo "Error fetching monthly sign-ups: " . $conn->error;
+}
+
+// Example 2: Prescriptions by Month
+$prescriptionsByMonth = [];
+$sql = "SELECT DATE_FORMAT(start_date, '%Y-%m') AS month, COUNT(*) AS count FROM prescriptions GROUP BY month ORDER BY month";
+$result = $conn->query($sql);
+if ($result) {
+    while ($row = $result->fetch_assoc()) {
+        $prescriptionsByMonth[] = array($row['month'], (int)$row['count']);
+    }
+} else {
+    echo "Error fetching prescriptions by month: " . $conn->error;
+}
+
+// Close connection
+$conn->close();
+
+// Prepare data for Google Charts
+$signupsData = array_merge(array(array('Month', 'Sign-ups')), $monthlySignups);
+$prescriptionsData = array_merge(array(array('Month', 'Prescriptions')), $prescriptionsByMonth);
+
 ?>
 
 <!DOCTYPE html>
@@ -38,23 +58,35 @@ $data_json = json_encode($data);
     <meta charset="UTF-8">
     <title>Data Analytics</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Roboto:400,700&display=swap" rel="stylesheet">
     <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
     <script type="text/javascript">
         google.charts.load('current', {'packages':['corechart']});
-        google.charts.setOnLoadCallback(drawChart);
+        google.charts.setOnLoadCallback(drawCharts);
 
-        function drawChart() {
-            var data = google.visualization.arrayToDataTable(<?php echo $data_json; ?>);
-
-            var options = {
+        function drawCharts() {
+            // Draw sign-ups chart
+            var signupsData = google.visualization.arrayToDataTable(<?php echo json_encode($signupsData); ?>);
+            var signupsOptions = {
                 title: 'User Sign-ups Over Time',
                 curveType: 'function',
                 legend: { position: 'bottom' }
             };
+            var signupsChart = new google.visualization.LineChart(document.getElementById('signups_chart'));
+            signupsChart.draw(signupsData, signupsOptions);
 
-            var chart = new google.visualization.LineChart(document.getElementById('curve_chart'));
+            // Draw prescriptions chart
+            var prescriptionsData = google.visualization.arrayToDataTable(<?php echo json_encode($prescriptionsData); ?>);
+            var prescriptionsOptions = {
+                title: 'Prescriptions by Month',
+                curveType: 'function',
+                legend: { position: 'bottom' }
+            };
+            var prescriptionsChart = new google.visualization.LineChart(document.getElementById('prescriptions_chart'));
+            prescriptionsChart.draw(prescriptionsData, prescriptionsOptions);
 
-            chart.draw(data, options);
+            // ... (Add more chart drawing functions as needed) ...
         }
     </script>
     <style>
@@ -106,7 +138,7 @@ $data_json = json_encode($data);
         .wrapper a {
             color: #000; 
         }
-    </style>
+        </style>
 </head>
 <body>
     <div class="wrapper">
@@ -114,12 +146,11 @@ $data_json = json_encode($data);
 
         <h2>Data Analytics</h2>
 
-        <div id="curve_chart" style="width: 900px; height: 500px"></div>
+        <div id="signups_chart" style="width: 900px; height: 500px"></div>
 
-        <?php
-        $conn->close();
-        include "../includes/footer.php";
-        ?>
+        <div id="prescriptions_chart" style="width: 900px; height: 500px"></div>
+
+        <?php include "../includes/footer.php"; ?>
     </div>
 </body>
 </html>

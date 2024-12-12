@@ -20,48 +20,47 @@ if (!$result) {
 ?>
 
 
-        <h2>Doctor Dashboard</h2>
+<h2>Doctor Dashboard</h2>
 
-        <ul class="list-group">
-            <li class="list-group-item"><a href="add_prescription.php">Add Prescription</a></li>
-            <li class="list-group-item"><a href="view_prescription.php">View Prescriptions</a></li> 
-            <li class="list-group-item"><a href="get_pharmacies.php">Get Pharmacies</a></li>
-        </ul>
+<ul class="list-group">
+    <li class="list-group-item"><a href="add_prescription.php">Add Prescription</a></li>
+    <li class="list-group-item"><a href="view_prescription.php">View Prescriptions</a></li>
+    <li class="list-group-item"><a href="get_pharmacies.php">Get Pharmacies</a></li>
+</ul>
 
-        <h3>Prescriptions I've Added</h3>
+<h3>Prescriptions I've Added</h3>
 
-        <?php if ($result->num_rows > 0) { ?>
-        <table class="table table-bordered"> 
-            <thead>
-                <tr>
-                    <th>Patient Name</th>
-                    <th>Medication Name</th>
-                    <th>Dosage</th>
-                    <th>Frequency</th>
-                    <th>Actions</th> 
-                </tr>
-            </thead>
-            <tbody>
-                <?php while ($row = $result->fetch_assoc()) { ?>
-                    <tr>
-                        <td><?php echo htmlspecialchars($row["patient_name"]); ?></td>
-                        <td><?php echo htmlspecialchars($row["medication_name"]); ?></td> 
-                        <td><?php echo htmlspecialchars($row["dosage"]); ?></td> 
-                        <td><?php echo htmlspecialchars($row["frequency"]); ?></td> 
-                        <td>
-                            <a href="view_prescription_details.php?id=<?php echo htmlspecialchars($row["id"]); ?>">View Details</a> | 
-                            <a href="edit_prescription.php?id=<?php echo htmlspecialchars($row["id"]); ?>">Edit</a> | 
-                            <a href="delete_prescription.php?id=<?php echo htmlspecialchars($row["id"]); ?>" onclick="return confirm('Are you sure you want to delete this prescription?');">Delete</a>
-                        </td>
-                    </tr>
-                <?php } ?>
-            </tbody>
-        </table>
-        <?php } else { ?>
-            <p>No prescriptions added yet.</p>
+<?php if ($result->num_rows > 0) { ?>
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>Patient Name</th>
+            <th>Medication Name</th>
+            <th>Dosage</th>
+            <th>Frequency</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        <?php while ($row = $result->fetch_assoc()) { ?>
+            <tr>
+                <td><?php echo htmlspecialchars($row["patient_name"]); ?></td>
+                <td><?php echo htmlspecialchars($row["medication_name"]); ?></td>
+                <td><?php echo htmlspecialchars($row["dosage"]); ?></td>
+                <td><?php echo htmlspecialchars($row["frequency"]); ?></td>
+                <td>
+                    <a href="view_prescription_details.php?id=<?php echo htmlspecialchars($row["id"]); ?>" class="btn btn-primary btn-sm mr-2"><i class="fa fa-eye"></i> View Details</a>
+                    <a href="edit_prescription.php?id=<?php echo htmlspecialchars($row["id"]); ?>" class="btn btn-warning btn-sm mr-2"><i class="fa fa-pencil"></i> Edit</a>
+                    <a href="delete_prescription.php?id=<?php echo htmlspecialchars($row["id"]); ?>" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this prescription?');"><i class="fa fa-trash"></i> Delete</a>
+                </td>
+            </tr>
         <?php } ?>
+    </tbody>
+</table>
+<?php } else { ?>
+    <p>No prescriptions added yet.</p>
+<?php } ?>
 
-        <?php
-        $conn->close();
-        
-        ?>
+<?php
+$conn->close();
+?>
