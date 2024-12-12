@@ -5,9 +5,9 @@ require_once "../includes/db_connect.php";
 
 // Fetch patient's prescriptions
 $patient_id = $_SESSION["id"];
-$sql = "SELECT p.*, u.username AS doctor_name 
+$sql = "SELECT p.*, u.username AS doctor_id 
         FROM prescriptions p
-        JOIN users u ON p.doctor_name = u.id 
+        JOIN users u ON p.doctor_id = u.id 
         WHERE p.user_id = $patient_id";
 $result = $conn->query($sql);
 
@@ -44,7 +44,7 @@ if (!$result) {
                         <td><?php echo htmlspecialchars($row["start_date"]); ?></td>
                         <td><?php echo htmlspecialchars($row["end_date"]); ?></td>
                         <td><?php echo htmlspecialchars($row["special_instructions"]); ?></td>
-                        <td><?php echo htmlspecialchars($row["doctor_name"]); ?></td>
+                        <td><?php echo htmlspecialchars($row["doctor_id"]); ?></td>
                         <td>
                             <a href="view_prescription_details.php?id=<?php echo htmlspecialchars($row["id"]); ?>" class="btn btn-primary btn-sm mr-2"><i class="fa fa-eye"></i> View Details</a> |
                             <a href="refill_request.php?id=<?php echo htmlspecialchars($row["id"]); ?>" class="btn btn-success btn-sm"><i class="fa fa-repeat"></i> Request Refill</a>

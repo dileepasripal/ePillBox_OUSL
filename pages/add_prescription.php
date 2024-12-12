@@ -18,7 +18,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $start_date = $_POST["start_date"];
     $end_date = $_POST["end_date"]; // Optional
     $special_instructions = $_POST["special_instructions"]; // Optional
-    $doctor_name = $_SESSION["id"]; // Assuming doctor name is the ID of the logged-in doctor
+    $doctor_id = $_SESSION["id"]; // Assuming doctor name is the ID of the logged-in doctor
     $user_id = $_POST["patient_id"]; // Get the patient ID from the form
 
     // Basic input validation (you'll need to enhance this)
@@ -39,13 +39,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $errors[] = "Patient ID is required.";
     }
 
-    // If there are no errors, proceed with inserting the prescription
-    if (empty($errors)) {
-        // Insert prescription into the database
-        $sql = "INSERT INTO prescriptions (user_id, medication_name, dosage, frequency, start_date, end_date, special_instructions, doctor_name) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
-        $stmt = $conn->prepare($sql);
-        $stmt->bind_param("issssssi", $user_id, $medication_name, $dosage, $frequency, $start_date, $end_date, $special_instructions, $doctor_name);
+// Add pharmacy validation
+if (empty($_POST["pharmacy_id"])) {
+    $errors[] = "Pharmacy selection is required.";
+}
+
+if (empty($errors)) {
+    $pharmacy_id = $_POST["pharmacy_id"];
+    // Update the SQL query to include pharmacy_id
+    $sql = "INSERT INTO prescriptions (user_id, medication_name, dosage, frequency, start_date, end_date, special_instructions, doctor_id, pharmacy_id) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("issssssis", $user_id, $medication_name, $dosage, $frequency, $start_date, $end_date, $special_instructions, $doctor_id, $pharmacy_id);
 
         if ($stmt->execute()) {
             echo "<p class='alert alert-success'>Prescription added successfully!</p>";
@@ -71,17 +76,21 @@ $patients_result = $conn->query($sql);
 if (!$patients_result) {
     die("Error fetching patients: " . $conn->error);
 }
+
+// Fetch all pharmacies for the pharmacy selection dropdown
+$sql = "SELECT pharmacy_id, name FROM pharmacies";
+$pharmacies_result = $conn->query($sql);
+
+if (!$pharmacies_result) {
+    die("Error fetching pharmacies: " . $conn->error);
+}
 ?>
 
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Add Prescription</title>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css?family=Roboto:400,700&display=swap" rel="stylesheet">
-    <style>
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+<style>
         body {
             font-family: 'Roboto', sans-serif;
             background-color: #f8f9fa;
@@ -93,7 +102,7 @@ if (!$patients_result) {
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
             padding: 40px;
             width: 80%;
-            max-width: 600px;
+            max-width: 800px;
             margin: 30px auto;
         }
 
@@ -104,27 +113,32 @@ if (!$patients_result) {
             font-weight: 700;
         }
 
-        .form-group {
-            margin-bottom: 20px;
+        p {
+            margin-bottom: 10px;
         }
 
-        .form-control {
-            border-radius: 5px;
+        strong {
+            font-weight: 700;
         }
 
-        .btn-primary {
-            background-color: #007bff;
-            border: none;
+        .btn {
             border-radius: 5px;
             padding: 10px 20px;
             transition: background-color 0.2s ease;
         }
 
+        .btn-primary {
+            background-color: #007bff;
+            border-color: #007bff;
+            color: #fff;
+        }
+
         .btn-primary:hover {
             background-color: #0062cc;
+            border-color: #0062cc;
         }
     </style>
-</head>
+    </head>
 <body>
     <div class="wrapper">
         <?php include "../includes/header.php";?>
@@ -135,9 +149,12 @@ if (!$patients_result) {
                 <label for="patient_id">Patient:</label>
                 <select id="patient_id" name="patient_id" class="form-control" required>
                     <option value="">Select Patient</option>
-                    <?php while ($patient = $patients_result->fetch_assoc()) { ?>
-                        <option value="<?php echo $patient['id']; ?>"><?php echo $patient['username']; ?></option>
-                    <?php } ?>
+                    <?php 
+                        while ($patient = $patients_result->fetch_assoc()) { ?>
+                            <option value="<?php echo htmlspecialchars($patient['id']); ?>"><?php echo htmlspecialchars($patient['username']); ?></option>
+                    <?php } 
+                    $patients_result->free(); // Free the result set
+                    ?>
                 </select>
             </div>
             <div class="form-group">
@@ -169,6 +186,21 @@ if (!$patients_result) {
                 <label for="special_instructions">Special Instructions (optional):</label>
                 <textarea id="special_instructions" name="special_instructions" class="form-control"></textarea>
             </div>
+
+            <div class="form-group">
+    <label for="pharmacy_id">Pharmacy:</label>
+    <select id="pharmacy_id" name="pharmacy_id" class="form-control" required>
+        <option value="">Select Pharmacy</option>
+        <?php 
+            while ($pharmacy = $pharmacies_result->fetch_assoc()) { ?>
+                <option value="<?php echo htmlspecialchars($pharmacy['pharmacy_id']); ?>">
+                    <?php echo htmlspecialchars($pharmacy['name']); ?>
+                </option>
+        <?php } 
+        $pharmacies_result->free(); // Free the result set
+        ?>
+    </select>
+</div>
 
             <div class="form-group">
                 <input type="submit" value="Add Prescription" class="btn btn-primary">
