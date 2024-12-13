@@ -1,78 +1,164 @@
 <?php
-// Check if the user is logged in and has the 'admin' role
-// ... (same as in admin_dashboard.php and manage_users.php)
-include '../includes/db_connect.php'; 
-// Get the user ID from the query parameter
-if (isset($_GET['id'])) {
-    $userId = $_GET['id'];
+session_start();
 
-    // Fetch user data for editing (change 'email' to 'username')
-    $sql = "SELECT id, username, role FROM users WHERE id = ?";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("i", $userId);
-    $stmt->execute();
-    $result = $stmt->get_result();
-
-    if ($result->num_rows == 1) {
-        $row = $result->fetch_assoc(); 
-
-        $username = $row["username"]; // Change 'email' to 'username'
-        $role = $row["role"];
-    } else {
-        // Handle invalid user ID
-        echo "User not found.";
-        exit;
-    }
-
-    $stmt->close();
-} else {
-    // Handle missing user ID
-    echo "Invalid request.";
+if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true || $_SESSION["role"] !== 'admin') {
+    header("location: login.php");
     exit;
 }
 
-// Handle form submission
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    // Sanitize and validate input 
-    $newUsername = htmlspecialchars($_POST["username"]); // Change 'email' to 'username'
-    $newRole = htmlspecialchars($_POST["role"]);
+require_once "../includes/db_connect.php";
 
-    // Update user data in the database (change 'email' to 'username')
-    $sql = "UPDATE users SET username = ?, role = ? WHERE id = ?";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("ssi", $newUsername, $newRole, $userId);
-
-    if ($stmt->execute()) {
-        header("location: manage_users.php");
-        exit;
-    } else {
-        echo "Error updating user: " . $stmt->error;
-    }
-
-    $stmt->close();
+if(!isset($_GET["id"])) {
+    header("location: home.php");
+    exit;
 }
 
-$conn->close();
+$user_id = $_GET["id"];
+$errors = [];
+
+// Handle form submission
+if($_SERVER["REQUEST_METHOD"] == "POST") {
+    // Validate input
+    if(empty(trim($_POST["email"]))) {
+        $errors[] = "Please enter an email.";
+    }
+    
+    if(empty(trim($_POST["contact"]))) {
+        $errors[] = "Please enter a contact number.";
+    }
+
+    if(empty($errors)) {
+        // Begin transaction
+        $conn->begin_transaction();
+
+        try {
+            // Update basic user information
+            $update_sql = "UPDATE users SET 
+                          email = ?, 
+                          contact = ?,
+                          first_name = ?,
+                          last_name = ?
+                          WHERE id = ?";
+            
+            $stmt = $conn->prepare($update_sql);
+            $stmt->bind_param("ssssi", 
+                $_POST["email"],
+                $_POST["contact"],
+                $_POST["first_name"],
+                $_POST["last_name"],
+                $user_id
+            );
+            $stmt->execute();
+
+            // Update role-specific information
+            if($_POST["role"] === "doctor") {
+                $update_role_sql = "UPDATE doctors SET 
+                                  specialization = ?,
+                                  hospital = ?
+                                  WHERE user_id = ?";
+                $stmt = $conn->prepare($update_role_sql);
+                $stmt->bind_param("ssi", 
+                    $_POST["specialization"],
+                    $_POST["hospital"],
+                    $user_id
+                );
+                $stmt->execute();
+            }
+            // Add similar updates for other roles
+
+            $conn->commit();
+            $_SESSION["success_message"] = "User updated successfully.";
+            header("location: ?page=manage_users");
+            exit;
+
+        } catch(Exception $e) {
+            $conn->rollback();
+            $errors[] = "Error updating user: " . $e->getMessage();
+        }
+    }
+}
+
+// Fetch current user data
+$sql = "SELECT u.*, 
+        d.specialization, d.hospital,
+        p.conditions, p.emergency_contact_1,
+        ph.pharmacy_name, ph.license_number
+        FROM users u
+        LEFT JOIN doctors d ON u.id = d.user_id
+        LEFT JOIN patients p ON u.id = p.user_id
+        LEFT JOIN pharmacists ph ON u.id = ph.user_id
+        WHERE u.id = ?";
+
+$stmt = $conn->prepare($sql);
+$stmt->bind_param("i", $user_id);
+$stmt->execute();
+$user = $stmt->get_result()->fetch_assoc();
 ?>
 
-<h2>Edit User</h2>
+<div class="container-fluid">
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">Edit User</h3>
+        </div>
+        <div class="card-body">
+            <?php if(!empty($errors)): ?>
+                <div class="alert alert-danger">
+                    <ul class="mb-0">
+                        <?php foreach($errors as $error): ?>
+                            <li><?php echo $error; ?></li>
+                        <?php endforeach; ?>
+                    </ul>
+                </div>
+            <?php endif; ?>
 
-<form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>?id=<?php echo $userId; ?>" method="post">
-    <div class="form-group">
-        <label>Username:</label>
-        <input type="text" name="username" class="form-control" value="<?php echo $username; ?>" required> 
+            <form method="post">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>First Name</label>
+                            <input type="text" name="first_name" class="form-control" 
+                                   value="<?php echo htmlspecialchars($user['first_name'] ?? ''); ?>">
+                        </div>
+                        <div class="form-group">
+                            <label>Last Name</label>
+                            <input type="text" name="last_name" class="form-control" 
+                                   value="<?php echo htmlspecialchars($user['last_name'] ?? ''); ?>">
+                        </div>
+                        <div class="form-group">
+                            <label>Email</label>
+                            <input type="email" name="email" class="form-control" required
+                                   value="<?php echo htmlspecialchars($user['email'] ?? ''); ?>">
+                        </div>
+                        <div class="form-group">
+                            <label>Contact</label>
+                            <input type="text" name="contact" class="form-control" required
+                                   value="<?php echo htmlspecialchars($user['contact']); ?>">
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <!-- Role-specific fields -->
+                        <?php if($user['role'] === 'doctor'): ?>
+                            <div class="form-group">
+                                <label>Specialization</label>
+                                <input type="text" name="specialization" class="form-control"
+                                       value="<?php echo htmlspecialchars($user['specialization'] ?? ''); ?>">
+                            </div>
+                            <div class="form-group">
+                                <label>Hospital</label>
+                                <input type="text" name="hospital" class="form-control"
+                                       value="<?php echo htmlspecialchars($user['hospital'] ?? ''); ?>">
+                            </div>
+                        <?php endif; ?>
+                        <!-- Add similar sections for other roles -->
+                    </div>
+                </div>
+
+                <div class="form-group mt-3">
+                    <button type="submit" class="btn btn-primary">Update User</button>
+                    <a href="?page=manage_users" class="btn btn-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
     </div>
-    <div class="form-group">
-        <label>Role:</label>
-        <select name="role" class="form-control" required>
-            <option value="patient" <?php if ($role == 'patient') echo 'selected'; ?>>Patient</option>
-            <option value="provider" <?php if ($role == 'provider') echo 'selected'; ?>>Provider</option>
-            <option value="pharmacist" <?php if ($role == 'pharmacist') echo 'selected'; ?>>Pharmacist</option>
-            <option value="admin" <?php if ($role == 'admin') echo 'selected'; ?>>Admin</option>
-        </select>
-    </div>
-    <div class="form-group">
-        <input type="submit" class="btn btn-primary" value="Save Changes">
-        <a href="manage_users.php" class="btn btn-secondary ml-2">Cancel</a>
-    </div>
-</form>
+</div>

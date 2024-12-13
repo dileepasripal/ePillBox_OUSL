@@ -1,159 +1,207 @@
 <?php
-// Initialize the session
 session_start();
 
-// Check if the user is logged in, if not then redirect him to login page
-if (!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true) {
+// Check if user is logged in and has admin role
+if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true || $_SESSION["role"] !== 'admin') {
     header("location: login.php");
     exit;
 }
 
-// Check if the user has the 'admin' role, if not then redirect to home page
-if ($_SESSION["role"] !== 'admin') {
-    header("location: home.php");
-    exit;
-}
-
-// Include config file
 require_once "../includes/db_connect.php";
 
-// Define variables and initialize with empty values
-$recipient_id = $message = "";
-$recipient_id_err = $message_err = "";
+// Define variables
+$recipient_ids = [];
+$message = $type = "";
+$errors = [];
 
 // Processing form data when form is submitted
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-
-    // Validate recipient ID
-    if (empty(trim($_POST["recipient_id"]))) {
-        $recipient_id_err = "Please enter a recipient ID.";
+if($_SERVER["REQUEST_METHOD"] == "POST") {
+    // Validate recipients
+    if(!isset($_POST["recipient_ids"]) || empty($_POST["recipient_ids"])) {
+        $errors[] = "Please select at least one recipient.";
     } else {
-        $recipient_id = trim($_POST["recipient_id"]);
+        $recipient_ids = $_POST["recipient_ids"];
     }
 
     // Validate message
-    if (empty(trim($_POST["message"]))) {
-        $message_err = "Please enter a message.";
+    if(empty(trim($_POST["message"]))) {
+        $errors[] = "Please enter a message.";
     } else {
         $message = trim($_POST["message"]);
     }
 
-    // Check input errors before inserting in database
-    if (empty($recipient_id_err) && empty($message_err)) {
-
-        // Prepare an insert statement
-        $sql = "INSERT INTO notifications (user_id, message) VALUES (?, ?)";
-
-        if ($stmt = mysqli_prepare($conn, $sql)) {
-            // Bind variables to the prepared statement as parameters
-            mysqli_stmt_bind_param($stmt, "is", $param_recipient_id, $param_message);
-
-            // Set parameters
-            $param_recipient_id = $recipient_id;
-            $param_message = $message;
-
-            // Attempt to execute the prepared statement
-            if (mysqli_stmt_execute($stmt)) {
-                // Redirect to send notifications page
-                header("location: send_notifications.php");
-            } else {
-                echo "Oops! Something went wrong. Please try again later.";
-            }
-
-            // Close statement
-            mysqli_stmt_close($stmt);
-        }
+    // Validate notification type
+    if(empty($_POST["type"])) {
+        $errors[] = "Please select a notification type.";
+    } else {
+        $type = $_POST["type"];
     }
 
-    // Close connection
-    mysqli_close($conn);
+    // If no errors, proceed with sending notifications
+    if(empty($errors)) {
+        $success_count = 0;
+        $fail_count = 0;
+
+        // Begin transaction
+        $conn->begin_transaction();
+
+        try {
+            $sql = "INSERT INTO notifications (user_id, type, message, created_at) VALUES (?, ?, ?, NOW())";
+            $stmt = $conn->prepare($sql);
+
+            foreach($recipient_ids as $recipient_id) {
+                $stmt->bind_param("iss", $recipient_id, $type, $message);
+                if($stmt->execute()) {
+                    $success_count++;
+                } else {
+                    $fail_count++;
+                }
+            }
+
+            $conn->commit();
+            $_SESSION['success_message'] = "Successfully sent notifications to $success_count recipients.";
+            if($fail_count > 0) {
+                $_SESSION['error_message'] = "Failed to send notifications to $fail_count recipients.";
+            }
+            header("location: ?page=send_notifications");
+            exit();
+
+        } catch(Exception $e) {
+            $conn->rollback();
+            $errors[] = "Error sending notifications: " . $e->getMessage();
+        }
+    }
 }
+
+// Fetch users for recipient selection
+$users_sql = "SELECT u.id, u.username, u.role, u.email,
+              CASE 
+                  WHEN u.role = 'doctor' THEN d.specialization
+                  WHEN u.role = 'patient' THEN CONCAT('Patient #', u.id)
+                  WHEN u.role = 'pharmacist' THEN ph.pharmacy_name
+                  ELSE ''
+              END as additional_info
+              FROM users u
+              LEFT JOIN doctors d ON u.id = d.user_id
+              LEFT JOIN pharmacists ph ON u.id = ph.user_id
+              WHERE u.role != 'admin'
+              ORDER BY u.role, u.username";
+
+$users_result = $conn->query($users_sql);
 ?>
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Send Notifications</title>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css?family=Roboto:400,700&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font: 14px sans-serif;
-            background-color: #f4f4f4;
-            display: flex;
-            flex-direction: column; 
-            min-height: 100vh; 
-        }
-
-        .wrapper {
-            background: #fff;
-            border-radius: 5px;
-            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
-            padding: 40px;
-            width: 80%;
-            max-width: 1200px; 
-            margin: 50px auto; 
-            flex-grow: 1; 
-            width: 1000px;
-        }
-
-        .wrapper h2 {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-
-        .wrapper .btn {
-            display: inline-block; 
-            margin-bottom: 10px; 
-            margin-right: 10px; 
-        }
-
-        .wrapper a {
-            color: #fff; 
-        }
-
-        .table {
-            width: 100%;
-            max-width: 100%; 
-            margin-bottom: 20px;
-        }
-
-        .table th, .table td {
-            padding: 10px;
-            vertical-align: middle; 
-        }
-        .wrapper a {
-            color: #000; 
-        }
-        </style>
-</head>
-<body>
-    <div class="wrapper">
-        <?php include "../includes/header.php"; ?>
-
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>Send Notifications</h2>
-
-        <h3>Send New Notification</h3>
-        <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post">
-            <div class="form-group">
-                <label>Recipient ID</label>
-                <input type="text" name="recipient_id" class="form-control <?php echo (!empty($recipient_id_err)) ? 'is-invalid' : ''; ?>" value="<?php echo $recipient_id; ?>">
-                <span class="invalid-feedback"><?php echo $recipient_id_err; ?></span>
-            </div>
-            <div class="form-group">
-                <label>Message</label>
-                <textarea name="message" class="form-control <?php echo (!empty($message_err)) ? 'is-invalid' : ''; ?>"><?php echo $message; ?></textarea>
-                <span class="invalid-feedback"><?php echo $message_err; ?></span>
-            </div>
-            <div class="form-group">
-                <input type="submit" class="btn btn-primary" value="Send">
-                <input type="reset" class="btn btn-secondary ml-2" value="Reset">
-            </div>
-        </form>
-
-        <?php include "../includes/footer.php"; ?>
     </div>
-</body>
-</html>
+
+    <?php if(!empty($errors)): ?>
+        <div class="alert alert-danger">
+            <ul class="mb-0">
+                <?php foreach($errors as $error): ?>
+                    <li><?php echo htmlspecialchars($error); ?></li>
+                <?php endforeach; ?>
+            </ul>
+        </div>
+    <?php endif; ?>
+
+    <?php if(isset($_SESSION['success_message'])): ?>
+        <div class="alert alert-success alert-dismissible fade show">
+            <?php 
+                echo $_SESSION['success_message']; 
+                unset($_SESSION['success_message']);
+            ?>
+            <button type="button" class="close" data-dismiss="alert">&times;</button>
+        </div>
+    <?php endif; ?>
+
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Send New Notification</h5>
+        </div>
+        <div class="card-body">
+            <form action="?page=send_notifications" method="post">
+                <div class="row">
+                    <div class="col-md-8">
+                        <div class="form-group">
+                            <label>Recipients*</label>
+                            <div class="recipient-list">
+                                <?php if($users_result->num_rows > 0): ?>
+                                    <div class="mb-2">
+                                        <div class="btn-group mb-2">
+                                            <button type="button" class="btn btn-secondary btn-sm" onclick="selectAllUsers()">Select All</button>
+                                            <button type="button" class="btn btn-secondary btn-sm" onclick="deselectAllUsers()">Deselect All</button>
+                                        </div>
+                                    </div>
+                                    <?php 
+                                    $current_role = '';
+                                    while($user = $users_result->fetch_assoc()): 
+                                        if($current_role != $user['role']):
+                                            if($current_role != '') echo '</div>';
+                                            $current_role = $user['role'];
+                                    ?>
+                                            <h6 class="mt-3"><?php echo ucfirst($current_role) . 's'; ?></h6>
+                                            <div class="pl-3">
+                                    <?php endif; ?>
+                                        <div class="custom-control custom-checkbox">
+                                            <input type="checkbox" class="custom-control-input user-checkbox" 
+                                                   name="recipient_ids[]" 
+                                                   value="<?php echo $user['id']; ?>" 
+                                                   id="user_<?php echo $user['id']; ?>">
+                                            <label class="custom-control-label" for="user_<?php echo $user['id']; ?>">
+                                                <?php 
+                                                    echo htmlspecialchars($user['username']);
+                                                    if(!empty($user['additional_info'])) {
+                                                        echo ' (' . htmlspecialchars($user['additional_info']) . ')';
+                                                    }
+                                                ?>
+                                            </label>
+                                        </div>
+                                    <?php endwhile; ?>
+                                    </div>
+                                <?php else: ?>
+                                    <p class="text-muted">No users found.</p>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label>Notification Type*</label>
+                            <select name="type" class="form-control" required>
+                                <option value="">Select Type</option>
+                                <option value="info">Information</option>
+                                <option value="warning">Warning</option>
+                                <option value="alert">Alert</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Message*</label>
+                            <textarea name="message" class="form-control" rows="5" required><?php echo htmlspecialchars($message); ?></textarea>
+                        </div>
+                        <div class="form-group mb-0">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-paper-plane"></i> Send Notification
+                            </button>
+                            <button type="reset" class="btn btn-secondary">
+                                <i class="fas fa-undo"></i> Reset
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function selectAllUsers() {
+    document.querySelectorAll('.user-checkbox').forEach(checkbox => checkbox.checked = true);
+}
+
+function deselectAllUsers() {
+    document.querySelectorAll('.user-checkbox').forEach(checkbox => checkbox.checked = false);
+}
+</script>
+
+<?php $conn->close(); ?>

@@ -133,7 +133,7 @@ $recent_activity = $conn->query($activity_sql);
             </div>
         </div>
         <div class="card-footer d-flex align-items-center justify-content-between">
-            <a class="small text-white stretched-link" href="?page=pharmacy_statistics">View Details</a>
+            <a class="small text-white stretched-link" href="pharmacy_statistics.php">View Details</a>
             <div class="small text-white"><i class="fas fa-angle-right"></i></div>
         </div>
     </div>
@@ -173,16 +173,16 @@ $recent_activity = $conn->query($activity_sql);
                 </div>
                 <div class="card-body">
                     <div class="list-group">
-                        <a href="?page=manage_users" class="list-group-item list-group-item-action">
+                        <a href="manage_users" class="list-group-item list-group-item-action">
                             <i class="fas fa-user-md me-2"></i> Manage Users
                         </a>
-                        <a href="?page=manage_pharmacies" class="list-group-item list-group-item-action">
+                        <a href="manage_pharmacies" class="list-group-item list-group-item-action">
                             <i class="fas fa-clinic-medical me-2"></i> Manage Pharmacies
                         </a>
-                        <a href="?page=system_settings" class="list-group-item list-group-item-action">
+                        <a href="system_settings" class="list-group-item list-group-item-action">
                             <i class="fas fa-cog me-2"></i> System Settings
                         </a>
-                        <a href="?page=send_notifications" class="list-group-item list-group-item-action">
+                        <a href="send_notifications" class="list-group-item list-group-item-action">
                             <i class="fas fa-bell me-2"></i> Send Notifications
                         </a>
                     </div>
