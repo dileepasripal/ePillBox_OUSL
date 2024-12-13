@@ -226,25 +226,6 @@ $recent_activity = $conn->query($activity_sql);
     </div>
 </div>
 
-<style>
-.card {
-    border: none;
-    border-radius: 10px;
-    box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
-}
-.card-header {
-    background-color: #f8f9fc;
-    border-bottom: 1px solid #e3e6f0;
-}
-.large {
-    font-size: 2.5rem;
-    font-weight: 700;
-}
-.text-white-50 {
-    color: rgba(255, 255, 255, 0.8) !important;
-}
-</style>
-
 <?php
 $conn->close();
 ?>

@@ -1,8 +1,38 @@
+<?php
+// Fetch notifications for logged-in users
+if(isset($_SESSION["loggedin"]) && $_SESSION["loggedin"] === true) {
+    $user_id = $_SESSION['id'];
+    try {
+        // Fetch notifications
+        $notifications_sql = "SELECT * FROM notifications WHERE user_id = ? AND is_read = 0 ORDER BY created_at DESC LIMIT 5";
+        $stmt = $conn->prepare($notifications_sql);
+        $stmt->bind_param("i", $user_id);
+        $stmt->execute();
+        $notifications = $stmt->get_result();
+        
+        // Get unread count
+        $count_sql = "SELECT COUNT(*) as count FROM notifications WHERE user_id = ? AND is_read = 0";
+        $count_stmt = $conn->prepare($count_sql);
+        $count_stmt->bind_param("i", $user_id);
+        $count_stmt->execute();
+        $unread_count = $count_stmt->get_result()->fetch_assoc()['count'];
+        
+        // Close statements
+        $stmt->close();
+        $count_stmt->close();
+    } catch (Exception $e) {
+        error_log("Error fetching notifications: " . $e->getMessage());
+        $notifications = null;
+        $unread_count = 0;
+    }
+}
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>ePillbox - <?php echo $title; ?></title>
+    <title>ePillbox - <?php echo isset($title) ? $title : ''; ?></title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <link href="https://fonts.googleapis.com/css?family=Roboto:400,700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
@@ -33,13 +63,8 @@
         .notification-dropdown {
             min-width: 300px;
             padding: 0;
-        }
-
-        .notification-header {
-            background-color: #f8f9fa;
-            padding: 10px 15px;
-            border-bottom: 1px solid #dee2e6;
-            font-weight: bold;
+            max-height: 400px;
+            overflow-y: auto;
         }
 
         .notification-item {
@@ -52,46 +77,32 @@
             background-color: #f8f9fa;
         }
 
-        .notification-time {
-            font-size: 0.8em;
-            color: #6c757d;
-        }
-
         .badge-notification {
             position: absolute;
-            top: 0;
-            right: 0;
-            font-size: 0.6rem;
-            padding: 0.25rem 0.4rem;
+            top: 0px;
+            right: -5px;
+            font-size: 0.75em;
+            padding: 0.25em 0.4em;
         }
 
         .nav-link-notification {
             position: relative;
+            display: inline-block;
+        }
+
+        .dropdown-header {
+            background-color: #f8f9fa;
+            font-weight: bold;
+            padding: 10px 15px;
+        }
+
+        .notification-time {
+            font-size: 0.85em;
+            color: #6c757d;
         }
     </style>
 </head>
 <body>
-    <?php
-    // Add this at the top to fetch notifications
-    if(isset($_SESSION["loggedin"]) && $_SESSION["loggedin"] === true) {
-        $user_id = $_SESSION['id'];
-        $notifications_sql = "SELECT * FROM notifications 
-                            WHERE user_id = ? AND is_read = 0 
-                            ORDER BY created_at DESC LIMIT 5";
-        $stmt = $conn->prepare($notifications_sql);
-        $stmt->bind_param("i", $user_id);
-        $stmt->execute();
-        $notifications = $stmt->get_result();
-        
-        // Get unread count
-        $count_sql = "SELECT COUNT(*) as count FROM notifications WHERE user_id = ? AND is_read = 0";
-        $count_stmt = $conn->prepare($count_sql);
-        $count_stmt->bind_param("i", $user_id);
-        $count_stmt->execute();
-        $unread_count = $count_stmt->get_result()->fetch_assoc()['count'];
-    }
-    ?>
-
     <header>
         <nav class="navbar navbar-expand-lg navbar-dark"> 
             <div class="container">
@@ -101,27 +112,25 @@
                 </button>
                 <div class="collapse navbar-collapse" id="navbarNav">
                     <ul class="navbar-nav ml-auto"> 
-                        <?php
-                        if(isset($_SESSION["loggedin"]) && $_SESSION["loggedin"] === true){
-                            ?>
-                            <li class="nav-item"><a class="nav-link" href="../pages/home.php">Home</a></li>
+                        <?php if(isset($_SESSION["loggedin"]) && $_SESSION["loggedin"] === true): ?>
+                            <li class="nav-item">
+                                <a class="nav-link" href="../pages/home.php">Home</a>
+                            </li>
                             
                             <!-- Notifications Dropdown -->
                             <li class="nav-item dropdown">
                                 <a class="nav-link nav-link-notification dropdown-toggle" href="#" id="notificationsDropdown" 
                                    role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                     <i class="fas fa-bell"></i>
-                                    <?php if($unread_count > 0): ?>
+                                    <?php if(isset($unread_count) && $unread_count > 0): ?>
                                         <span class="badge badge-danger badge-notification"><?php echo $unread_count; ?></span>
                                     <?php endif; ?>
                                 </a>
                                 <div class="dropdown-menu dropdown-menu-right notification-dropdown" aria-labelledby="notificationsDropdown">
-                                    <div class="notification-header">
-                                        Notifications
-                                    </div>
-                                    <?php if($notifications->num_rows > 0): ?>
+                                    <div class="dropdown-header">Notifications</div>
+                                    <?php if(isset($notifications) && $notifications->num_rows > 0): ?>
                                         <?php while($notification = $notifications->fetch_assoc()): ?>
-                                            <a class="dropdown-item notification-item" href="?page=view_notification&id=<?php echo $notification['id']; ?>"
+                                            <a class="dropdown-item notification-item" href="view_notification&id=<?php echo $notification['id']; ?>" 
                                                data-id="<?php echo $notification['id']; ?>">
                                                 <div class="notification-time">
                                                     <?php echo date('M d, Y H:i', strtotime($notification['created_at'])); ?>
@@ -132,7 +141,7 @@
                                             </a>
                                         <?php endwhile; ?>
                                         <div class="dropdown-divider"></div>
-                                        <a class="dropdown-item text-center" href="?page=all_notifications">
+                                        <a class="dropdown-item text-center" href="all_notifications">
                                             View All Notifications
                                         </a>
                                     <?php else: ?>
@@ -143,14 +152,20 @@
                                 </div>
                             </li>
 
-                            <li class="nav-item"><a class="nav-link" href="../pages/profile.php">Profile</a></li>
-                            <li class="nav-item"><a class="nav-link" href="../pages/logout.php">Logout</a></li>
-                            <?php
-                        } else {
-                            echo '<li class="nav-item"><a class="nav-link" href="../pages/register.php">Register</a></li>';
-                            echo '<li class="nav-item"><a class="nav-link" href="../pages/login.php">Login</a></li>';
-                        }
-                        ?>
+                            <li class="nav-item">
+                                <a class="nav-link" href="../pages/profile.php">Profile</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="../pages/logout.php">Logout</a>
+                            </li>
+                        <?php else: ?>
+                            <li class="nav-item">
+                                <a class="nav-link" href="../pages/register.php">Register</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="../pages/login.php">Login</a>
+                            </li>
+                        <?php endif; ?>
                     </ul>
                 </div>
             </div>
@@ -158,11 +173,13 @@
     </header>
     <main class="flex-grow-1">
 
-    <!-- Add required scripts -->
+    <!-- Required JavaScript -->
     <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 
+    
+    <?php if(isset($_SESSION["loggedin"]) && $_SESSION["loggedin"] === true): ?>
     <script>
     $(document).ready(function() {
         // Mark notification as read when clicked
@@ -185,3 +202,8 @@
         }, 30000);
     });
     </script>
+    <?php endif; ?>
+
+    </main>
+</body>
+</html>

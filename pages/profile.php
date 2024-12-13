@@ -235,7 +235,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }
 
     // Close connection
-    mysqli_close($conn);
+    //mysqli_close($conn);
 }
 ?>
 
@@ -307,5 +307,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         </form>
     </div>
     <?php include "../includes/footer.php"; ?>
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 </body>
 </html>
