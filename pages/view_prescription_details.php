@@ -70,7 +70,27 @@ if ($user_role === 'doctor') {
             )";
     $stmt = $conn->prepare($sql);
     $stmt->bind_param("ii", $prescription_id, $user_id);
-} else {
+} else if ($user_role === 'admin') { // Admin can see all details
+    $sql = "SELECT p.*, 
+            u.username AS patient_name,
+            u.email AS patient_email,
+            u.contact AS patient_contact,
+            d.username AS doctor_name,
+            d.specialization AS doctor_specialization,
+            d.hospital AS doctor_hospital,
+            ph.name AS pharmacy_name,
+            ph.address AS pharmacy_address,
+            ph.contact_information AS pharmacy_contact
+            FROM prescriptions p
+            JOIN users u ON p.user_id = u.id
+            JOIN users du ON p.doctor_id = du.id
+            JOIN doctors d ON du.id = d.user_id
+            JOIN pharmacies ph ON p.pharmacy_id = ph.pharmacy_id
+            WHERE p.id = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("i", $prescription_id);
+}
+ else {
     header("Location: login.php");
     exit;
 }

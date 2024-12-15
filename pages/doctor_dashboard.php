@@ -22,9 +22,10 @@ if (!$result) {
 
 <h2>Doctor Dashboard</h2>
 
-<ul class="list-group">
-  <li class="list-group-item"><a href="add_prescription.php">Add Prescription</a></li>
-</ul>
+
+<a href="add_prescription.php" class="btn btn-success">
+                        <i class="fas fa-user-plus"></i> Add Prescription
+                    </a>
 
 
 

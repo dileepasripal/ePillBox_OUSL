@@ -39,9 +39,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
            $stmt2->bind_param("ssi", $_POST["specialization"], $_POST["experience"], $_SESSION["id"]);
            $stmt2->execute();
        } elseif ($_SESSION["role"] == 'pharmacist') {
-           $sql2 = "UPDATE pharmacists SET pharmacy_name=?, license_number=? WHERE user_id=?";
+           $sql2 = "UPDATE pharmacists SET pharmacy_id=?, license_number=? WHERE user_id=?";
            $stmt2 = $conn->prepare($sql2);
-           $stmt2->bind_param("ssi", $_POST["pharmacy_name"], $_POST["license_number"], $_SESSION["id"]);
+           $stmt2->bind_param("ssi", $_POST["pharmacy_id"], $_POST["license_number"], $_SESSION["id"]);
            $stmt2->execute();
        }
 
@@ -59,7 +59,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
            CASE 
                WHEN u.role = 'patient' THEN p.conditions 
                WHEN u.role = 'doctor' THEN d.specialization
-               WHEN u.role = 'pharmacist' THEN ph.pharmacy_name
+               WHEN u.role = 'pharmacist' THEN ph.pharmacy_id
            END as role_specific_1,
            CASE 
                WHEN u.role = 'patient' THEN p.medications
@@ -91,7 +91,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
        $specialization = $user_data['role_specific_1'] ?? '';
        $experience = $user_data['role_specific_2'] ?? '';
    } elseif ($_SESSION["role"] == 'pharmacist') {
-       $pharmacy_name = $user_data['role_specific_1'] ?? '';
+       $pharmacy_id = $user_data['role_specific_1'] ?? '';
        $license_number = $user_data['role_specific_2'] ?? '';
    }
 }
@@ -197,8 +197,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                        </div>
                    <?php elseif ($_SESSION["role"] == 'pharmacist'): ?>
                        <div class="form-group">
-                           <label>Pharmacy Name</label>
-                           <input type="text" name="pharmacy_name" class="form-control" value="<?php echo $pharmacy_name ?? ''; ?>" required>
+                           <label>Pharmacy ID</label>
+                           <input type="text" name="pharmacy_id" class="form-control" value="<?php echo $pharmacy_id ?? ''; ?>" required>
                        </div>
                        <div class="form-group">
                            <label>License Number</label>

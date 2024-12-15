@@ -1,6 +1,7 @@
 <?php
 // Fetch notifications for logged-in users
-if(isset($_SESSION["loggedin"]) && $_SESSION["loggedin"] === true) {
+if (isset($_SESSION["loggedin"]) && $_SESSION["loggedin"] === true && isset($conn)) { // Check if $conn exists
+
     $user_id = $_SESSION['id'];
     try {
         // Fetch notifications
@@ -18,8 +19,8 @@ if(isset($_SESSION["loggedin"]) && $_SESSION["loggedin"] === true) {
         $unread_count = $count_stmt->get_result()->fetch_assoc()['count'];
         
         // Close statements
-        $stmt->close();
-        $count_stmt->close();
+        //$stmt->close();
+        //$count_stmt->close();
     } catch (Exception $e) {
         error_log("Error fetching notifications: " . $e->getMessage());
         $notifications = null;
@@ -130,7 +131,7 @@ if(isset($_SESSION["loggedin"]) && $_SESSION["loggedin"] === true) {
                                     <div class="dropdown-header">Notifications</div>
                                     <?php if(isset($notifications) && $notifications->num_rows > 0): ?>
                                         <?php while($notification = $notifications->fetch_assoc()): ?>
-                                            <a class="dropdown-item notification-item" href="view_notification&id=<?php echo $notification['id']; ?>" 
+                                            <a class="dropdown-item notification-item" href="view_notification?id=<?php echo $notification['id']; ?>" 
                                                data-id="<?php echo $notification['id']; ?>">
                                                 <div class="notification-time">
                                                     <?php echo date('M d, Y H:i', strtotime($notification['created_at'])); ?>
@@ -148,6 +149,9 @@ if(isset($_SESSION["loggedin"]) && $_SESSION["loggedin"] === true) {
                                         <div class="dropdown-item text-center">
                                             No new notifications
                                         </div>
+                                        <a class="dropdown-item text-center" href="all_notifications">
+                                            View All Notifications
+                                        </a>
                                     <?php endif; ?>
                                 </div>
                             </li>
