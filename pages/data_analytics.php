@@ -51,10 +51,35 @@ $activity_stmt->execute();
 $activities = $activity_stmt->get_result();
 ?>
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>User Management</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        .wrapper { padding: 20px; }
+        .search-box { margin-bottom: 20px; }
+        .role-badge {
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.85em;
+        }
+        .role-doctor { background-color: #cce5ff; color: #004085; }
+        .role-patient { background-color: #d4edda; color: #155724; }
+        .role-pharmacist { background-color: #fff3cd; color: #856404; }
+        .role-admin { background-color: #f8d7da; color: #721c24; }
+        .action-buttons { white-space: nowrap; }
+    </style>
+</head>
+<body>
+<div class="wrapper">
+<?php include "../includes/header.php"; ?>
 <div class="container-fluid px-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="mt-4">Daily Activity Report</h1>
-        <a href="?page=admin_dashboard" class="btn btn-secondary">
+        <a href="home" class="btn btn-secondary">
             <i class="fas fa-arrow-left"></i> Back to Dashboard
         </a>
     </div>
@@ -168,7 +193,7 @@ $activities = $activity_stmt->get_result();
                                         </span>
                                     </td>
                                     <td>
-                                        <a href="?page=view_prescription_details&id=<?php echo $row['id']; ?>" 
+                                        <a href="view_prescription_details?id=<?php echo $row['id']; ?>" 
                                            class="btn btn-sm btn-primary">
                                             <i class="fas fa-eye"></i> View
                                         </a>
@@ -207,3 +232,9 @@ $stats_stmt->close();
 $activity_stmt->close();
 $conn->close();
 ?>
+<?php
+include "../includes/footer.php";
+?>
+</div>
+</body>
+</html>

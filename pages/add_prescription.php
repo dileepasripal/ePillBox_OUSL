@@ -1,219 +1,179 @@
 <?php
-session_start(); // Start the session at the very beginning
+session_start();
 
-// Check if the user is logged in and has the 'doctor' role 
-if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true || $_SESSION["role"] !== 'doctor'){
-    header("location: login.php"); // Redirect to login if not logged in or not a doctor
+if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true || $_SESSION["role"] !== 'doctor') {
+    header("location: login.php");
     exit;
 }
 
 include '../includes/db_connect.php';
 
-// Handle form submission
+$errors = [];
+$success_msg = "";
+$search_term = "";
+
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    // Get data from the form and perform validation
-    $medication_name = $_POST["medication_name"];
-    $dosage = $_POST["dosage"];
-    $frequency = $_POST["frequency"];
-    $start_date = $_POST["start_date"];
-    $end_date = $_POST["end_date"]; // Optional
-    $special_instructions = $_POST["special_instructions"]; // Optional
-    $doctor_id = $_SESSION["id"]; // Assuming doctor name is the ID of the logged-in doctor
-    $user_id = $_POST["patient_id"]; // Get the patient ID from the form
-
-    // Basic input validation (you'll need to enhance this)
-    $errors = array();
-    if (empty($medication_name)) {
-        $errors[] = "Medication name is required.";
-    }
-    if (empty($dosage)) {
-        $errors[] = "Dosage is required.";
-    }
-    if (empty($frequency)) {
-        $errors[] = "Frequency is required.";
-    }
-    if (empty($start_date)) {
-        $errors[] = "Start date is required.";
-    }
-    if (empty($user_id)) {
-        $errors[] = "Patient ID is required.";
+    $required_fields = ['medication_name', 'dosage', 'frequency', 'start_date', 'pharmacy_id'];
+    foreach($required_fields as $field) {
+        if(empty(trim($_POST[$field]))) {
+            $errors[] = ucfirst(str_replace('_', ' ', $field)) . " is required.";
+        }
     }
 
-// Add pharmacy validation
-if (empty($_POST["pharmacy_id"])) {
-    $errors[] = "Pharmacy selection is required.";
-}
+    if(!empty($_POST['start_date'])) {
+        if(strtotime($_POST['start_date']) < strtotime('today')) {
+            $errors[] = "Start date cannot be in the past.";
+        }
+        if(!empty($_POST['end_date']) && strtotime($_POST['end_date']) <= strtotime($_POST['start_date'])) {
+            $errors[] = "End date must be after start date.";
+        }
+    }
 
-if (empty($errors)) {
-    $pharmacy_id = $_POST["pharmacy_id"];
-    // Update the SQL query to include pharmacy_id
-    $sql = "INSERT INTO prescriptions (user_id, medication_name, dosage, frequency, start_date, end_date, special_instructions, doctor_id, pharmacy_id) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("issssssis", $user_id, $medication_name, $dosage, $frequency, $start_date, $end_date, $special_instructions, $doctor_id, $pharmacy_id);
-
-        if ($stmt->execute()) {
-            echo "<p class='alert alert-success'>Prescription added successfully!</p>";
+    if (isset($_POST['search_term']) && !empty(trim($_POST['search_term']))) {
+        $search_term = trim($_POST['search_term']);
+        $sql = "SELECT id FROM users WHERE role = 'patient' AND username LIKE ?";
+        $stmt = $conn->prepare($sql);
+        $search_param = "%" . $search_term . "%";
+        $stmt->bind_param("s", $search_param);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        if ($result->num_rows === 0) {
+            $errors[] = "No patient found with that username.";
         } else {
-            echo "<p class='alert alert-danger'>Error adding prescription: " . $stmt->error . "</p>";
+            $patient = $result->fetch_assoc();
+            $_POST['patient_id'] = $patient['id']; // Set patient_id if found
         }
+    } else if(empty(trim($_POST['patient_id']))){
+        $errors[] = "Patient is required.";
+    }
 
-        $stmt->close();
-    } else {
-        // Display errors
-        echo "<ul class='alert alert-danger'>";
-        foreach ($errors as $error) {
-            echo "<li>" . $error . "</li>";
+
+    if(empty($errors)) {
+        $sql = "INSERT INTO prescriptions (user_id, medication_name, dosage, frequency, start_date, end_date, special_instructions, doctor_id, pharmacy_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("issssssis", $_POST['patient_id'], $_POST['medication_name'], $_POST['dosage'], $_POST['frequency'], $_POST['start_date'], $_POST['end_date'], $_POST['special_instructions'], $_SESSION['id'], $_POST['pharmacy_id']);
+
+        if($stmt->execute()) {
+            $notification_sql = "INSERT INTO notifications (user_id, type, message) VALUES (?, 'prescription', ?)";
+            $notify_stmt = $conn->prepare($notification_sql);
+            $message = "New prescription added for: " . $_POST['medication_name'];
+            $notify_stmt->bind_param("is", $_POST['patient_id'], $message);
+            $notify_stmt->execute();
+            
+            $success_msg = "Prescription added successfully!";
+            $_POST = array(); // Clear form
+        } else {
+            $errors[] = "Error adding prescription: " . $stmt->error;
         }
-        echo "</ul>";
     }
 }
 
-// Fetch all patients for the patient selection dropdown
-$sql = "SELECT id, username FROM users WHERE role = 'patient'";
-$patients_result = $conn->query($sql);
-
-if (!$patients_result) {
-    die("Error fetching patients: " . $conn->error);
-}
-
-// Fetch all pharmacies for the pharmacy selection dropdown
-$sql = "SELECT pharmacy_id, name FROM pharmacies";
-$pharmacies_result = $conn->query($sql);
-
-if (!$pharmacies_result) {
-    die("Error fetching pharmacies: " . $conn->error);
-}
+$pharmacies = $conn->query("SELECT pharmacy_id, name FROM pharmacies");
 ?>
 
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-<style>
-        body {
-            font-family: 'Roboto', sans-serif;
-            background-color: #f8f9fa;
+    <meta charset="UTF-8">
+    <title>Add Prescription</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        .card {
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+            margin-bottom: 1.5rem;
         }
-
-        .wrapper {
-            background: #fff;
-            border-radius: 10px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-            padding: 40px;
-            width: 80%;
-            max-width: 800px;
-            margin: 30px auto;
-        }
-
-        h2 {
-            text-align: center;
-            margin-bottom: 30px;
-            color: #343a40;
-            font-weight: 700;
-        }
-
-        p {
-            margin-bottom: 10px;
-        }
-
-        strong {
-            font-weight: 700;
-        }
-
-        .btn {
-            border-radius: 5px;
-            padding: 10px 20px;
-            transition: background-color 0.2s ease;
-        }
-
-        .btn-primary {
-            background-color: #007bff;
-            border-color: #007bff;
-            color: #fff;
-        }
-
-        .btn-primary:hover {
-            background-color: #0062cc;
-            border-color: #0062cc;
+        .card-header {
+            background-color: #f8f9fc;
+            border-bottom: 1px solid #e3e6f0;
         }
     </style>
-    </head>
+</head>
 <body>
     <div class="wrapper">
-        <?php include "../includes/header.php";?>
-        <h2>Add Prescription</h2>
+        <?php include "../includes/header.php"; ?>
 
-        <form method="post" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]);?>">
-            <div class="form-group">
-                <label for="patient_id">Patient:</label>
-                <select id="patient_id" name="patient_id" class="form-control" required>
-                    <option value="">Select Patient</option>
-                    <?php 
-                        while ($patient = $patients_result->fetch_assoc()) { ?>
-                            <option value="<?php echo htmlspecialchars($patient['id']); ?>"><?php echo htmlspecialchars($patient['username']); ?></option>
-                    <?php } 
-                    $patients_result->free(); // Free the result set
-                    ?>
-                </select>
+        <div class="container">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="mb-0">Add New Prescription</h2>
+                </div>
+                <div class="card-body">
+                    <?php if(!empty($errors)): ?>
+                        <div class="alert alert-danger">
+                            <?php foreach($errors as $error): ?>
+                                <div><i class="fas fa-exclamation-circle"></i> <?php echo $error; ?></div>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php endif; ?>
+
+                    <?php if($success_msg): ?>
+                        <div class="alert alert-success">
+                            <i class="fas fa-check-circle"></i> <?php echo $success_msg; ?>
+                        </div>
+                    <?php endif; ?>
+
+                    <form method="post" class="needs-validation" novalidate>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="search_term">Search Patient (Username):</label>
+                                    <input type="text" name="search_term" id="search_term" class="form-control" value="<?php echo htmlspecialchars($search_term); ?>">
+                                </div>
+                                <input type="hidden" name="patient_id" value="<?php echo isset($_POST['patient_id']) ? $_POST['patient_id'] : ''; ?>">
+                                <div class="form-group">
+                                    <label>Medication Name*</label>
+                                    <input type="text" name="medication_name" class="form-control" value="<?php echo htmlspecialchars($_POST['medication_name'] ?? ''); ?>" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Dosage*</label>
+                                    <input type="text" name="dosage" class="form-control" value="<?php echo htmlspecialchars($_POST['dosage'] ?? ''); ?>" required>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Frequency*</label>
+                                    <input type="text" name="frequency" class="form-control" value="<?php echo htmlspecialchars($_POST['frequency'] ?? ''); ?>" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Start Date*</label>
+                                    <input type="date" name="start_date" class="form-control" min="<?php echo date('Y-m-d'); ?>" value="<?php echo htmlspecialchars($_POST['start_date'] ?? ''); ?>" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>End Date</label>
+                                    <input type="date" name="end_date" class="form-control" value="<?php echo htmlspecialchars($_POST['end_date'] ?? ''); ?>">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Pharmacy*</label>
+                            <select name="pharmacy_id" class="form-control" required>
+                                <option value="">Select Pharmacy</option>
+                                <?php while($pharmacy = $pharmacies->fetch_assoc()): ?>
+                                    <option value="<?php echo $pharmacy['pharmacy_id']; ?>" <?php echo isset($_POST['pharmacy_id']) && $_POST['pharmacy_id'] == $pharmacy['pharmacy_id'] ? 'selected' : ''; ?>>
+                                        <?php echo htmlspecialchars($pharmacy['name']); ?>
+                                    </option>
+                                <?php endwhile; ?>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Special Instructions</label>
+                            <textarea name="special_instructions" class="form-control" rows="3"><?php echo htmlspecialchars($_POST['special_instructions'] ?? ''); ?></textarea>
+                        </div>
+
+                        <div class="form-group mb-0">
+                            <button type="submit" class="btn btn-primary"><i class="fas fa-plus"></i> Add Prescription</button>
+                            <button type="reset" class="btn btn-secondary"><i class="fas fa-undo"></i> Reset</button>
+                        </div>
+                    </form>
+                </div>
             </div>
-            <div class="form-group">
-                <label for="medication_name">Medication Name:</label>
-                <input type="text" id="medication_name" name="medication_name" class="form-control" required>
-            </div>
+        </div>
 
-            <div class="form-group">
-                <label for="dosage">Dosage:</label>
-                <input type="text" id="dosage" name="dosage" class="form-control" required>
-            </div>
-
-            <div class="form-group">
-                <label for="frequency">Frequency:</label>
-                <input type="text" id="frequency" name="frequency" class="form-control" required>
-            </div>
-
-            <div class="form-group">
-                <label for="start_date">Start Date:</label>
-                <input type="date" id="start_date" name="start_date" class="form-control" required>
-            </div>
-
-            <div class="form-group">
-                <label for="end_date">End Date (optional):</label>
-                <input type="date" id="end_date" name="end_date" class="form-control">
-            </div>
-
-            <div class="form-group">
-                <label for="special_instructions">Special Instructions (optional):</label>
-                <textarea id="special_instructions" name="special_instructions" class="form-control"></textarea>
-            </div>
-
-            <div class="form-group">
-    <label for="pharmacy_id">Pharmacy:</label>
-    <select id="pharmacy_id" name="pharmacy_id" class="form-control" required>
-        <option value="">Select Pharmacy</option>
-        <?php 
-            while ($pharmacy = $pharmacies_result->fetch_assoc()) { ?>
-                <option value="<?php echo htmlspecialchars($pharmacy['pharmacy_id']); ?>">
-                    <?php echo htmlspecialchars($pharmacy['name']); ?>
-                </option>
-        <?php } 
-        $pharmacies_result->free(); // Free the result set
-        ?>
-    </select>
-</div>
-
-            <div class="form-group">
-                <input type="submit" value="Add Prescription" class="btn btn-primary">
-            </div>
-        </form>
-
-        <h3>Upload Prescription Image</h3>
-        <p>This feature will be available in the future. </p>
-
-        <?php
-        $conn->close();
-        include "../includes/footer.php";
-        ?>
+        <?php include "../includes/footer.php"; ?>
     </div>
 </body>
 </html>

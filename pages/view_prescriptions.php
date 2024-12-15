@@ -89,7 +89,31 @@ if($user_role === 'patient' || $user_role === 'doctor') {
 $stmt->execute();
 $result = $stmt->get_result();
 ?>
-
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>User Management</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        .wrapper { padding: 20px; }
+        .search-box { margin-bottom: 20px; }
+        .role-badge {
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.85em;
+        }
+        .role-doctor { background-color: #cce5ff; color: #004085; }
+        .role-patient { background-color: #d4edda; color: #155724; }
+        .role-pharmacist { background-color: #fff3cd; color: #856404; }
+        .role-admin { background-color: #f8d7da; color: #721c24; }
+        .action-buttons { white-space: nowrap; }
+    </style>
+</head>
+<body>
+<div class="wrapper">
+<?php include "../includes/header.php"; ?>
 <div class="container-fluid">
     <!-- Filter and Sort Section -->
     <div class="card mb-4">
@@ -118,7 +142,7 @@ $result = $stmt->get_result();
                     </select>
                 </div>
                 <div class="col-md-2 mb-2">
-                    <a href="?page=view_prescriptions" class="btn btn-secondary btn-block">Reset Filters</a>
+                    <a href="view_prescriptions" class="btn btn-secondary btn-block">Reset Filters</a>
                 </div>
             </form>
         </div>
@@ -184,18 +208,18 @@ $result = $stmt->get_result();
                                     </td>
                                     <td>
                                         <div class="btn-group">
-                                            <a href="?page=view_prescription_details&id=<?php echo $row["id"]; ?>" 
+                                            <a href="view_prescription_details?id=<?php echo $row["id"]; ?>" 
                                                class="btn btn-info btn-sm" title="View Details">
                                                 <i class="fas fa-eye"></i>
                                             </a>
                                             <?php if($user_role === 'doctor'): ?>
-                                                <a href="?page=edit_prescription&id=<?php echo $row["id"]; ?>" 
+                                                <a href="edit_prescription?id=<?php echo $row["id"]; ?>" 
                                                    class="btn btn-warning btn-sm" title="Edit">
                                                     <i class="fas fa-edit"></i>
                                                 </a>
                                             <?php endif; ?>
                                             <?php if($user_role === 'patient' && $row["refill_status"] === 'new'): ?>
-                                                <a href="?page=request_refill&id=<?php echo $row["id"]; ?>" 
+                                                <a href="request_refill?id=<?php echo $row["id"]; ?>" 
                                                    class="btn btn-success btn-sm" title="Request Refill"
                                                    onclick="return confirm('Are you sure you want to request a refill?');">
                                                     <i class="fas fa-sync"></i>
@@ -237,6 +261,12 @@ $result = $stmt->get_result();
 </style>
 
 <?php
-$stmt->close();
+//$stmt->close();
 $conn->close();
 ?>
+<?php
+include "../includes/footer.php";
+?>
+</div>
+</body>
+</html>

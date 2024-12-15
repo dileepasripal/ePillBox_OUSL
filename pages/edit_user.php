@@ -68,7 +68,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST") {
 
             $conn->commit();
             $_SESSION["success_message"] = "User updated successfully.";
-            header("location: ?page=manage_users");
+            header("location: manage_users");
             exit;
 
         } catch(Exception $e) {
@@ -95,6 +95,31 @@ $stmt->execute();
 $user = $stmt->get_result()->fetch_assoc();
 ?>
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>User Management</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        .wrapper { padding: 20px; }
+        .search-box { margin-bottom: 20px; }
+        .role-badge {
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.85em;
+        }
+        .role-doctor { background-color: #cce5ff; color: #004085; }
+        .role-patient { background-color: #d4edda; color: #155724; }
+        .role-pharmacist { background-color: #fff3cd; color: #856404; }
+        .role-admin { background-color: #f8d7da; color: #721c24; }
+        .action-buttons { white-space: nowrap; }
+    </style>
+</head>
+<body>
+<div class="wrapper">
+<?php include "../includes/header.php"; ?>
 <div class="container-fluid">
     <div class="card">
         <div class="card-header">
@@ -156,9 +181,16 @@ $user = $stmt->get_result()->fetch_assoc();
 
                 <div class="form-group mt-3">
                     <button type="submit" class="btn btn-primary">Update User</button>
-                    <a href="?page=manage_users" class="btn btn-secondary">Cancel</a>
+                    <a href="manage_users" class="btn btn-secondary">Cancel</a>
                 </div>
             </form>
         </div>
     </div>
 </div>
+
+<?php
+include "../includes/footer.php";
+?>
+</div>
+</body>
+</html>

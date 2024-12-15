@@ -34,10 +34,35 @@ while($row = $result->fetch_assoc()) {
 }
 ?>
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>User Management</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        .wrapper { padding: 20px; }
+        .search-box { margin-bottom: 20px; }
+        .role-badge {
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.85em;
+        }
+        .role-doctor { background-color: #cce5ff; color: #004085; }
+        .role-patient { background-color: #d4edda; color: #155724; }
+        .role-pharmacist { background-color: #fff3cd; color: #856404; }
+        .role-admin { background-color: #f8d7da; color: #721c24; }
+        .action-buttons { white-space: nowrap; }
+    </style>
+</head>
+<body>
+<div class="wrapper">
+<?php include "../includes/header.php"; ?>
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>Pharmacy Statistics and Locations</h2>
-        <a href="?page=manage_pharmacies" class="btn btn-primary">
+        <a href="manage_pharmacies" class="btn btn-primary">
             <i class="fas fa-plus"></i> Manage Pharmacies
         </a>
     </div>
@@ -127,7 +152,7 @@ while($row = $result->fetch_assoc()) {
                                 <td><?php echo $pharmacy['unique_patients']; ?></td>
                                 <td><?php echo $pharmacy['pharmacist_count']; ?></td>
                                 <td>
-                                    <a href="?page=view_pharmacy_details&id=<?php echo $pharmacy['pharmacy_id']; ?>" 
+                                    <a href="view_pharmacy_details?id=<?php echo $pharmacy['pharmacy_id']; ?>" 
                                        class="btn btn-info btn-sm">
                                         <i class="fas fa-eye"></i>
                                     </a>
@@ -193,3 +218,10 @@ function centerMap(lat, lng) {
 </script>
 
 <?php $conn->close(); ?>
+
+<?php
+include "../includes/footer.php";
+?>
+</div>
+</body>
+</html>

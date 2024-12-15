@@ -1,314 +1,219 @@
 <?php
-// Initialize the session
 session_start();
 
-// Check if the user is logged in, if not then redirect him to login page
 if (!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true) {
-    header("location: login.php");
-    exit;
+   header("location: login.php");
+   exit;
 }
 
-// Include config file
 require_once "../includes/db_connect.php";
 
-// Define variables and initialize with empty values
-$username = $dob = $contact = $conditions = $medications = $specialization = $experience = $pharmacy_name = $license_number = "";
-$username_err = $dob_err = $contact_err = $conditions_err = $medications_err = $specialization_err = $experience_err = $pharmacy_name_err = $license_number_err = "";
+$error = "";
+$success_message = "";
 
-// Processing form data when form is submitted
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
+   $username = trim($_POST["username"]);
+   $first_name = trim($_POST["first_name"]); 
+   $last_name = trim($_POST["last_name"]);
+   $email = trim($_POST["email"]);
+   $dob = trim($_POST["dob"]);
+   $contact = trim($_POST["contact"]);
 
-    // Validate username
-    $username = trim($_POST["username"]);
-    if(empty($username)){
-        $username_err = "Please enter a username.";
-    }
+   $conn->begin_transaction();
+   try {
+       $sql = "UPDATE users SET 
+               username=?, first_name=?, last_name=?, email=?, dob=?, contact=? 
+               WHERE id=?";
+       $stmt = $conn->prepare($sql);
+       $stmt->bind_param("ssssssi", $username, $first_name, $last_name, $email, $dob, $contact, $_SESSION["id"]);
+       $stmt->execute();
 
-    // Validate date of birth
-    $dob = trim($_POST["dob"]);
-    if(empty($dob)){
-        $dob_err = "Please enter your date of birth.";
-    }
+       if ($_SESSION["role"] == 'patient') {
+           $sql2 = "UPDATE patients SET conditions=?, medications=? WHERE user_id=?";
+           $stmt2 = $conn->prepare($sql2);
+           $stmt2->bind_param("ssi", $_POST["conditions"], $_POST["medications"], $_SESSION["id"]);
+           $stmt2->execute();
+       } elseif ($_SESSION["role"] == 'doctor') {
+           $sql2 = "UPDATE doctors SET specialization=?, experience=? WHERE user_id=?";
+           $stmt2 = $conn->prepare($sql2);
+           $stmt2->bind_param("ssi", $_POST["specialization"], $_POST["experience"], $_SESSION["id"]);
+           $stmt2->execute();
+       } elseif ($_SESSION["role"] == 'pharmacist') {
+           $sql2 = "UPDATE pharmacists SET pharmacy_name=?, license_number=? WHERE user_id=?";
+           $stmt2 = $conn->prepare($sql2);
+           $stmt2->bind_param("ssi", $_POST["pharmacy_name"], $_POST["license_number"], $_SESSION["id"]);
+           $stmt2->execute();
+       }
 
-    // Validate contact information
-    $contact = trim($_POST["contact"]);
-    if(empty($contact)){
-        $contact_err = "Please enter your contact information.";
-    }
+       $conn->commit();
+       $_SESSION['success_message'] = "Profile updated successfully!";
+       header("location: profile.php");
+       exit();
 
-    // Validate fields based on user role
-    switch ($_SESSION["role"]) {
-        case 'patient':
-            // Validate medical conditions (optional)
-            $conditions = trim($_POST["conditions"]);
-
-            // Validate current medications (optional)
-            $medications = trim($_POST["medications"]);
-            break;
-        case 'doctor':
-            // Validate specialization
-            $specialization = trim($_POST["specialization"]);
-            if(empty($specialization)){
-                $specialization_err = "Please enter your specialization.";
-            }
-
-            // Validate experience
-            $experience = trim($_POST["experience"]);
-            if(empty($experience)){
-                $experience_err = "Please enter your experience.";
-            }
-            break;
-        case 'pharmacist':
-            // Validate pharmacy name
-            $pharmacy_name = trim($_POST["pharmacy_name"]);
-            if(empty($pharmacy_name)){
-                $pharmacy_name_err = "Please enter your pharmacy name.";
-            }
-
-            // Validate license number
-            $license_number = trim($_POST["license_number"]);
-            if(empty($license_number)){
-                $license_number_err = "Please enter your license number.";
-            }
-            break;
-    }
-
-    // Check input errors before updating the database
-    if(empty($username_err) && empty($dob_err) && empty($contact_err) && 
-       empty($conditions_err) && empty($medications_err) && empty($specialization_err) && 
-       empty($experience_err) && empty($pharmacy_name_err) && empty($license_number_err)){
-
-        // Prepare an update statement based on user role
-        $sql = "";
-        switch ($_SESSION["role"]) {
-            case 'patient':
-                $sql = "UPDATE users SET username = ?, dob = ?, contact = ? WHERE id = ?";
-                $sql2 = "UPDATE patients SET conditions = ?, medications = ? WHERE username = ?";
-                break;
-            case 'doctor':
-                $sql = "UPDATE users SET username = ?, dob = ?, contact = ? WHERE id = ?";
-                $sql2 = "UPDATE doctors SET specialization = ?, experience = ? WHERE username = ?";
-                break;
-            case 'pharmacist':
-                $sql = "UPDATE users SET username = ?, dob = ?, contact = ? WHERE id = ?";
-                $sql2 = "UPDATE pharmacists SET pharmacy_name = ?, license_number = ? WHERE username = ?";
-                break;
-        }
-        
-        if($stmt = mysqli_prepare($conn, $sql)){
-            // Bind variables to the prepared statement as parameters based on user role
-            switch ($_SESSION["role"]) {
-                case 'patient':
-                case 'doctor':
-                case 'pharmacist':
-                    mysqli_stmt_bind_param($stmt, "sssi", $param_username, $param_dob, $param_contact, $param_id);
-                    break;
-            }
-            
-            // Set parameters
-            $param_username = $username;
-            $param_dob = $dob;
-            $param_contact = $contact;
-            $param_id = $_SESSION["id"];
-            
-            // Attempt to execute the prepared statement
-            if(mysqli_stmt_execute($stmt)){
-                // If doctor or pharmacist, update their specific table as well
-                if ($_SESSION["role"] == 'doctor' || $_SESSION["role"] == 'pharmacist' || $_SESSION["role"] == 'patient') {
-                    if($stmt2 = mysqli_prepare($conn, $sql2)){
-                        // Bind parameters for the second query based on user role
-                        if ($_SESSION["role"] == 'doctor') {
-                            mysqli_stmt_bind_param($stmt2, "sss", $param_specialization, $param_experience, $param_username);
-                            $param_specialization = $_POST["specialization"];
-                            $param_experience = $_POST["experience"];
-                        } else if ($_SESSION["role"] == 'pharmacist') {
-                            mysqli_stmt_bind_param($stmt2, "sss", $param_pharmacy_name, $param_license_number, $param_username);
-                            $param_pharmacy_name = $_POST["pharmacy_name"];
-                            $param_license_number = $_POST["license_number"];
-                        } else {
-                            mysqli_stmt_bind_param($stmt2, "sss", $param_conditions, $param_medications, $param_username);
-                            $param_conditions = $_POST["conditions"];
-                            $param_medications = $_POST["medications"];
-                        }
-
-                        // Attempt to execute the second prepared statement
-                        if(!mysqli_stmt_execute($stmt2)){
-                            echo "Oops! Something went wrong. Please try again later.";
-                        }
-
-                        mysqli_stmt_close($stmt2);
-                    }
-                }
-
-                // Profile updated successfully. Redirect to profile page
-                header("location: profile.php");
-                exit();
-            } else{
-                echo "Oops! Something went wrong. Please try again later.";
-            }
-
-            // Close statement
-            mysqli_stmt_close($stmt);
-        }
-    }
-    
-    // Close connection
-    mysqli_close($conn);
+   } catch(Exception $e) {
+       $conn->rollback();
+       $error = "Error updating profile: " . $e->getMessage();
+   }
 } else {
-    // Prepare a select statement based on user role
-    $sql = "";
-    switch ($_SESSION["role"]) {
-        case 'patient':
-            $sql = "SELECT u.username, u.dob, u.contact, p.conditions, p.medications 
-                    FROM users u
-                    INNER JOIN patients p ON u.username = p.username 
-                    WHERE u.id = ?";
-            break;
-        case 'doctor':
-            $sql = "SELECT u.username, u.dob, u.contact, d.specialization, d.experience 
-                    FROM users u
-                    INNER JOIN doctors d ON u.username = d.username 
-                    WHERE u.id = ?";
-            break;
-        case 'pharmacist':
-            $sql = "SELECT u.username, u.dob, u.contact, p.pharmacy_name, p.license_number 
-                    FROM users u
-                    INNER JOIN pharmacists p ON u.username = p.username 
-                    WHERE u.id = ?";
-            break;
-        case 'admin':
-            $sql = "SELECT username, dob, contact FROM users WHERE id = ?";
-            break;
-        default:
-            // Handle cases for other roles or redirect to an error page
-            // header("location: error.php");
-            // exit();
-            echo "Invalid user role.";
-    }
+   $sql = "SELECT u.*, 
+           CASE 
+               WHEN u.role = 'patient' THEN p.conditions 
+               WHEN u.role = 'doctor' THEN d.specialization
+               WHEN u.role = 'pharmacist' THEN ph.pharmacy_name
+           END as role_specific_1,
+           CASE 
+               WHEN u.role = 'patient' THEN p.medications
+               WHEN u.role = 'doctor' THEN d.experience 
+               WHEN u.role = 'pharmacist' THEN ph.license_number
+           END as role_specific_2
+           FROM users u
+           LEFT JOIN patients p ON u.id = p.user_id
+           LEFT JOIN doctors d ON u.id = d.user_id
+           LEFT JOIN pharmacists ph ON u.id = ph.user_id
+           WHERE u.id = ?";
 
-    if ($stmt = mysqli_prepare($conn, $sql)) {
-        // Bind variables to the prepared statement as parameters
-        mysqli_stmt_bind_param($stmt, "i", $param_id);
+   $stmt = $conn->prepare($sql);
+   $stmt->bind_param("i", $_SESSION["id"]);
+   $stmt->execute();
+   $user_data = $stmt->get_result()->fetch_assoc();
 
-        // Set parameters
-        $param_id = $_SESSION["id"];
+   $username = $user_data['username'] ?? '';
+   $first_name = $user_data['first_name'] ?? '';
+   $last_name = $user_data['last_name'] ?? '';
+   $email = $user_data['email'] ?? '';
+   $dob = $user_data['dob'] ?? '';
+   $contact = $user_data['contact'] ?? '';
 
-        // Attempt to execute the prepared statement
-        if (mysqli_stmt_execute($stmt)) {
-            // Store result
-            mysqli_stmt_store_result($stmt);
-
-            // Check if user exists
-            if (mysqli_stmt_num_rows($stmt) == 1) {
-                // Bind result variables based on user role
-                switch ($_SESSION["role"]) {
-                    case 'patient':
-                        mysqli_stmt_bind_result($stmt, $username, $dob, $contact, $conditions, $medications);
-                        break;
-                    case 'doctor':
-                        mysqli_stmt_bind_result($stmt, $username, $dob, $contact, $specialization, $experience);
-                        break;
-                    case 'pharmacist':
-                        mysqli_stmt_bind_result($stmt, $username, $dob, $contact, $pharmacy_name, $license_number);
-                        break;
-                    case 'admin':
-                        mysqli_stmt_bind_result($stmt, $username, $dob, $contact);
-                        break;
-                }
-
-                if (mysqli_stmt_fetch($stmt)) {
-                    // Fetch and assign values to variables
-                    // No need to echo the user ID here
-                }
-            } else {
-                // URL doesn't contain valid id. Redirect to error page
-                 header("location: error.php");
-                 exit();
-                echo "User not found.";
-            }
-        } else {
-            echo "Oops! Something went wrong. Please try again later.";
-        }
-
-        // Close statement
-        mysqli_stmt_close($stmt);
-    }
-
-    // Close connection
-    //mysqli_close($conn);
+   if ($_SESSION["role"] == 'patient') {
+       $conditions = $user_data['role_specific_1'] ?? '';
+       $medications = $user_data['role_specific_2'] ?? '';
+   } elseif ($_SESSION["role"] == 'doctor') {
+       $specialization = $user_data['role_specific_1'] ?? '';
+       $experience = $user_data['role_specific_2'] ?? '';
+   } elseif ($_SESSION["role"] == 'pharmacist') {
+       $pharmacy_name = $user_data['role_specific_1'] ?? '';
+       $license_number = $user_data['role_specific_2'] ?? '';
+   }
 }
 ?>
 
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Profile</title>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-    <style>
-        body{ font: 14px sans-serif; }
-        .wrapper{ width: 360px; padding: 20px; margin: 0 auto; }
-    </style>
+   <meta charset="UTF-8">
+   <title>Profile</title>
+   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+   <style>
+       .wrapper {
+           max-width: 800px;
+           margin: 20px auto;
+           padding: 20px;
+       }
+       .card {
+           box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+       }
+       .card-header {
+           background-color: #f8f9fa;
+           border-bottom: 1px solid #e3e6f0;
+       }
+   </style>
 </head>
 <body>
-    <?php include "../includes/header.php"; ?> 
-    <div class="wrapper">
-        <h2>Profile</h2>
-        <p>View and update your profile information.</p>
-        <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post">
-            <div class="form-group">
-                <label>Username</label>
-                <input type="text" name="username" class="form-control <?php echo (!empty($username_err)) ? 'is-invalid' : ''; ?>" value="<?php echo $username; ?>">
-                <span class="invalid-feedback"><?php echo $username_err; ?></span>
-            </div>
-            <div class="form-group">
-                <label>Date of Birth</label>
-                <input type="date" name="dob" class="form-control <?php echo (!empty($dob_err)) ? 'is-invalid' : ''; ?>" value="<?php echo $dob; ?>">
-                <span class="invalid-feedback"><?php echo $dob_err; ?></span>
-            </div>
-            <div class="form-group">
-                <label>Contact Information</label>
-                <input type="text" name="contact" class="form-control <?php echo (!empty($contact_err)) ? 'is-invalid' : ''; ?>" value="<?php echo $contact; ?>">
-                <span class="invalid-feedback"><?php echo $contact_err; ?></span>
-            </div>
+   <?php include "../includes/header.php"; ?>
+   
+   <div class="wrapper">
+       <div class="card">
+           <div class="card-header">
+               <h2 class="mb-0">Profile Information</h2>
+           </div>
+           <div class="card-body">
+               <?php if(!empty($error)): ?>
+                   <div class="alert alert-danger"><?php echo $error; ?></div>
+               <?php endif; ?>
 
-            <?php if ($_SESSION["role"] == 'patient'): ?>
-                <div class="form-group">
-                    <label>Medical Conditions (Optional)</label>
-                    <textarea name="conditions" class="form-control"><?php echo $conditions; ?></textarea>
-                </div>
-                <div class="form-group">
-                    <label>Current Medications (Optional)</label>
-                    <textarea name="medications" class="form-control"><?php echo $medications; ?></textarea>
-                </div>
-            <?php elseif ($_SESSION["role"] == 'doctor'): ?>
-                <div class="form-group">
-                    <label>Specialization</label>
-                    <input type="text" name="specialization" class="form-control" value="<?php echo $specialization; ?>">
-                </div>
-                <div class="form-group">
-                    <label>Experience</label>
-                    <input type="text" name="experience" class="form-control" value="<?php echo $experience; ?>">
-                </div>
-            <?php elseif ($_SESSION["role"] == 'pharmacist'): ?>
-                <div class="form-group">
-                    <label>Pharmacy Name</label>
-                    <input type="text" name="pharmacy_name" class="form-control" value="<?php echo $pharmacy_name; ?>">
-                </div>
-                <div class="form-group">
-                    <label>License Number</label>
-                    <input type="text" name="license_number" class="form-control" value="<?php echo $license_number; ?>">
-                </div>
-            <?php endif; ?>
+               <?php if(isset($_SESSION['success_message'])): ?>
+                   <div class="alert alert-success">
+                       <?php 
+                           echo $_SESSION['success_message'];
+                           unset($_SESSION['success_message']);
+                       ?>
+                   </div>
+               <?php endif; ?>
 
-            <div class="form-group">
-                <input type="submit" class="btn btn-primary" value="Update Profile">
-            </div>
-        </form>
-    </div>
-    <?php include "../includes/footer.php"; ?>
-    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+               <form action="" method="post">
+                   <div class="row">
+                       <div class="col-md-6">
+                           <div class="form-group">
+                               <label>Username</label>
+                               <input type="text" name="username" class="form-control" value="<?php echo $username; ?>" required>
+                           </div>
+                           
+                           <div class="form-group">
+                               <label>First Name</label>
+                               <input type="text" name="first_name" class="form-control" value="<?php echo $first_name; ?>" required>
+                           </div>
+
+                           <div class="form-group">
+                               <label>Last Name</label>
+                               <input type="text" name="last_name" class="form-control" value="<?php echo $last_name; ?>" required>
+                           </div>
+                       </div>
+                       
+                       <div class="col-md-6">
+                           <div class="form-group">
+                               <label>Email</label>
+                               <input type="email" name="email" class="form-control" value="<?php echo $email; ?>" required>
+                           </div>
+
+                           <div class="form-group">
+                               <label>Date of Birth</label>
+                               <input type="date" name="dob" class="form-control" value="<?php echo $dob; ?>" required>
+                           </div>
+
+                           <div class="form-group">
+                               <label>Contact</label>
+                               <input type="text" name="contact" class="form-control" value="<?php echo $contact; ?>" required>
+                           </div>
+                       </div>
+                   </div>
+
+                   <?php if ($_SESSION["role"] == 'patient'): ?>
+                       <div class="form-group">
+                           <label>Medical Conditions (Optional)</label>
+                           <textarea name="conditions" class="form-control"><?php echo $conditions ?? ''; ?></textarea>
+                       </div>
+                       <div class="form-group">
+                           <label>Current Medications (Optional)</label>
+                           <textarea name="medications" class="form-control"><?php echo $medications ?? ''; ?></textarea>
+                       </div>
+                   <?php elseif ($_SESSION["role"] == 'doctor'): ?>
+                       <div class="form-group">
+                           <label>Specialization</label>
+                           <input type="text" name="specialization" class="form-control" value="<?php echo $specialization ?? ''; ?>" required>
+                       </div>
+                       <div class="form-group">
+                           <label>Experience</label>
+                           <input type="text" name="experience" class="form-control" value="<?php echo $experience ?? ''; ?>" required>
+                       </div>
+                   <?php elseif ($_SESSION["role"] == 'pharmacist'): ?>
+                       <div class="form-group">
+                           <label>Pharmacy Name</label>
+                           <input type="text" name="pharmacy_name" class="form-control" value="<?php echo $pharmacy_name ?? ''; ?>" required>
+                       </div>
+                       <div class="form-group">
+                           <label>License Number</label>
+                           <input type="text" name="license_number" class="form-control" value="<?php echo $license_number ?? ''; ?>" required>
+                       </div>
+                   <?php endif; ?>
+
+                   <div class="form-group mb-0">
+                       <button type="submit" class="btn btn-primary">Update Profile</button>
+                   </div>
+               </form>
+           </div>
+       </div>
+   </div>
+
+   <?php include "../includes/footer.php"; ?>
 </body>
 </html>

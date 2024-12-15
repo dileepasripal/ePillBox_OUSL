@@ -151,8 +151,8 @@ $user = $result->fetch_assoc();
                     </div>
                 </div>
                 <div class="card-footer">
-                    <a href="?page=manage_users" class="btn btn-secondary">Back to Users List</a>
-                    <a href="?page=edit_user&id=<?php echo $user_id; ?>" class="btn btn-primary">Edit User</a>
+                    <a href="manage_users" class="btn btn-secondary">Back to Users List</a>
+                    <a href="edit_user?id=<?php echo $user_id; ?>" class="btn btn-primary">Edit User</a>
                 </div>
             </div>
         </div>
@@ -160,7 +160,7 @@ $user = $result->fetch_assoc();
 </div>
 <br>
 <?php
-$stmt->close();
+//$stmt->close();
 $conn->close();
 include "../includes/footer.php";
 ?>

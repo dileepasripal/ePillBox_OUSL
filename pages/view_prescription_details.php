@@ -247,6 +247,6 @@ $prescription = $result->fetch_assoc();
 </html>
 
 <?php
-$stmt->close();
+//$stmt->close();
 $conn->close();
 ?>

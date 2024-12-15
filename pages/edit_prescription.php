@@ -30,7 +30,7 @@ $stmt->execute();
 $result = $stmt->get_result();
 
 if($result->num_rows === 0) {
-    header("location: doctor_dashboard.php");
+    header("location: home.php");
     exit;
 }
 
@@ -87,6 +87,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         );
 
         if ($stmt->execute()) {
+            // Update Notification Table (New addition)
+            $message = "Prescription details updated for: " . $_POST['medication_name'];
+            $notify_sql = "INSERT INTO notifications (user_id, type, message) VALUES (?, 'prescription_update', ?)";
+            $notify_stmt = $conn->prepare($notify_sql);
+            $notify_stmt->bind_param("is", $prescription['user_id'], $message);
+            $notify_stmt->execute();
+            // End of New addition
+      
             header("location: view_prescription_details.php?id=" . $prescription_id);
             exit;
         } else {
