@@ -317,8 +317,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                    <?php endif; ?>
 
                    <div class="form-group mb-0">
-                       <button type="submit" class="btn btn-primary">Update Profile</button>
-                   </div>
+                        <button type="submit" class="btn btn-primary">Update Profile</button>
+                        <a href="reset_password.php" class="btn btn-secondary">Reset Password</a> 
+                    </div>
                </form>
            </div>
        </div>
