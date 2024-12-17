@@ -50,15 +50,15 @@ $update_stmt->bind_param("i", $prescription_id);
 
 // Try to update the prescription
 if($update_stmt->execute()) {
-    // Insert a notification for the patient
-    $notification_sql = "INSERT INTO notifications (user_id, type, message, created_at)
-                        SELECT user_id, 'refill_approved', 
-                        CONCAT('Your refill request for ', medication_name, ' has been approved.'),
-                        CURRENT_TIMESTAMP
-                        FROM prescriptions WHERE id = ?";
+    // Insert a notification for the patient with reference_id
+    $notification_sql = "INSERT INTO notifications (user_id, type, message, created_at, reference_id)
+                            SELECT user_id, 'refill_approved', 
+                            CONCAT('Your refill request for ', medication_name, ' has been approved.'),
+                            CURRENT_TIMESTAMP, ?  -- Add reference_id here
+                            FROM prescriptions WHERE id = ?";
     
     $notify_stmt = $conn->prepare($notification_sql);
-    $notify_stmt->bind_param("i", $prescription_id);
+    $notify_stmt->bind_param("ii", $prescription_id, $prescription_id); // Bind prescription_id twice
     $notify_stmt->execute();
 
     $_SESSION['success_message'] = "Refill request has been approved successfully.";

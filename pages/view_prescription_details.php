@@ -112,47 +112,128 @@ $prescription = $result->fetch_assoc();
     <meta charset="UTF-8">
     <title>Prescription Details</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Roboto:400,700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+
     <style>
-        body {
+        body{ font: 14px sans-serif; 
+            text-align: center;
             font-family: 'Roboto', sans-serif;
-            background-color: #f8f9fa;
+            background-color: #f8f9fa; 
         }
         .wrapper {
             background: #fff;
-            border-radius: 10px;
+            border-radius: 10px; /* More rounded corners */
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
             padding: 40px;
             width: 80%;
-            max-width: 800px;
+            max-width: 1200px;
             margin: 30px auto;
         }
-        .prescription-details {
-            border: 1px solid #ddd;
-            padding: 20px;
-            border-radius: 5px;
+        h2 {
+            text-align: center;
+            margin-bottom: 30px; /* Increased margin */
+            color: #343a40;
+            font-weight: 700;
+        }
+
+        h3 {
+            color: #343a40;
+            font-weight: 700;
             margin-bottom: 20px;
         }
-        .section-header {
-            background-color: #f8f9fa;
-            padding: 10px;
-            margin-bottom: 15px;
-            border-radius: 5px;
+
+        .form-group {
+            margin-bottom: 20px;
         }
-        .btn {
+
+        .form-control {
+            border-radius: 5px; /* Rounded input fields */
+        }
+
+        .btn-primary {
+            background-color: #007bff;
+            border: none;
             border-radius: 5px;
             padding: 10px 20px;
-            transition: background-color 0.2s ease;
+            transition: background-color 0.2s ease; /* Smooth transition */
         }
-        .status-badge {
+
+        .btn-primary:hover {
+            background-color: #0062cc; /* Darker shade on hover */
+        }
+
+        .table {
+            width: 100%;
+            max-width: 100%;
+            margin-top: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            border-collapse: separate; /* Add space between cells */
+            border-spacing: 0 10px; /* Adjust spacing as needed */
+        }
+
+        .table th, .table td {
+            padding: 15px;
+            vertical-align: middle;
+            background-color: #fff; /* White background for cells */
+            border-radius: 5px; /* Rounded cell corners */
+        }
+
+        .table th {
+            background-color: #f8f9fa; /* Light background for header */
+            font-weight: 700;
+            color: #343a40;
+        }
+
+        .table-bordered th,
+        .table-bordered td {
+            border: none; /* Remove default border */
+        }
+
+        .btn-sm {
+            padding: 5px 10px;
+            font-size: 0.8rem;
+        }
+
+        .fa {
+            margin-right: 5px;
+        }
+    </style>
+    <style>
+        .card {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+        }
+        .card-header {
+            background-color: #f8f9fc;
+            border-bottom: 1px solid #e3e6f0;
+        }
+        .large {
+            font-size: 2.5rem;
+            font-weight: 700;
+        }
+        .text-white-50 {
+            color: rgba(255, 255, 255, 0.8) !important;
+        }
+</style>
+    <style>
+        .wrapper { padding: 20px; }
+        .search-box { margin-bottom: 20px; }
+        .role-badge {
             padding: 5px 10px;
             border-radius: 15px;
-            font-size: 0.9em;
-            font-weight: 500;
+            font-size: 0.85em;
         }
-        .status-new { background-color: #e3f2fd; color: #0d47a1; }
-        .status-refill { background-color: #fff3e0; color: #e65100; }
-        .status-discontinued { background-color: #ffebee; color: #b71c1c; }
+        .role-doctor { background-color: #cce5ff; color: #004085; }
+        .role-patient { background-color: #d4edda; color: #155724; }
+        .role-pharmacist { background-color: #fff3cd; color: #856404; }
+        .role-admin { background-color: #f8d7da; color: #721c24; }
+        .action-buttons { white-space: nowrap; }
     </style>
 </head>
 <body>
