@@ -82,6 +82,7 @@ if (!$result) {
     <title>Manage Pharmacies</title>
     <title>User Management</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css?family=Roboto:400,700&display=swap" rel="stylesheet">
@@ -191,6 +192,22 @@ if (!$result) {
         .text-white-50 {
             color: rgba(255, 255, 255, 0.8) !important;
         }
+        #pharmacyMap {
+    height: 400px;
+    width: 100%;
+    border-radius: 0.5rem;
+    margin-bottom: 1rem;
+    border: 1px solid #dee2e6;
+}
+
+.leaflet-popup-content {
+    padding: 1rem;
+}
+
+.leaflet-popup-content h3 {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
 </style>
     <style>
         .wrapper { padding: 20px; }
@@ -212,6 +229,14 @@ if (!$result) {
     <?php include "../includes/header.php"; ?>
         <div class="container-fluid">
             <!-- Page Header -->
+            <div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">Pharmacy Locations</h5>
+    </div>
+    <div class="card-body">
+        <div id="pharmacyMap"></div>
+    </div>
+</div>
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h2 class="text-dark mb-0">Manage Pharmacies</h2>
                 <button class="btn btn-primary" type="button" data-toggle="collapse" data-target="#addPharmacyForm">
@@ -354,32 +379,43 @@ if (!$result) {
         <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
     <script>
         // Initialize map centered on Sri Lanka
-        var map = L.map('map').setView([7.8731, 80.7718], 8);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors'
-        }).addTo(map);
+var map = L.map('pharmacyMap').setView([7.8731, 80.7718], 8);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors'
+}).addTo(map);
 
-        var marker;
+// Add markers for each pharmacy
+<?php 
+$result->data_seek(0); // Reset result pointer
+while($row = $result->fetch_assoc()) { 
+?>
+    L.marker([<?php echo $row['latitude']; ?>, <?php echo $row['longitude']; ?>])
+        .addTo(map)
+        .bindPopup(`
+            <div class="popup-content">
+                <h3><?php echo htmlspecialchars($row["name"]); ?></h3>
+                <p><strong>Address:</strong> <?php echo htmlspecialchars($row["address"]); ?></p>
+                <p><strong>Contact:</strong> <?php echo htmlspecialchars($row["contact_information"]); ?></p>
+                <p><strong>Hours:</strong> <?php echo htmlspecialchars($row["opening_hours"]); ?></p>
+            </div>
+        `);
+<?php 
+} 
+?>
 
-        map.on('click', function(e) {
-            if (marker) {
-                map.removeLayer(marker);
-            }
-            marker = L.marker(e.latlng).addTo(map);
-            
-            document.getElementById('latitude').value = e.latlng.lat;
-            document.getElementById('longitude').value = e.latlng.lng;
-            document.getElementById('selectedLat').textContent = e.latlng.lat.toFixed(6);
-            document.getElementById('selectedLng').textContent = e.latlng.lng.toFixed(6);
-        });
-
-        function showOnMap(lat, lng) {
-            map.setView([lat, lng], 15);
-            if (marker) {
-                map.removeLayer(marker);
-            }
-            marker = L.marker([lat, lng]).addTo(map);
-        }
+// Fit map to show all markers
+var bounds = [];
+<?php 
+$result->data_seek(0);
+while($row = $result->fetch_assoc()) { 
+?>
+    bounds.push([<?php echo $row['latitude']; ?>, <?php echo $row['longitude']; ?>]);
+<?php 
+} 
+?>
+if (bounds.length > 0) {
+    map.fitBounds(bounds);
+}
     </script>
 
 <?php

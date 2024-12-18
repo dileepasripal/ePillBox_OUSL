@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1:3306
--- Generation Time: Dec 17, 2024 at 12:13 PM
+-- Generation Time: Dec 18, 2024 at 05:34 AM
 -- Server version: 8.0.29
 -- PHP Version: 8.2.18
 
@@ -67,7 +67,7 @@ CREATE TABLE IF NOT EXISTS `doctors` (
 --
 
 INSERT INTO `doctors` (`user_id`, `username`, `specialization`, `experience`, `hospital`, `hospital_address`) VALUES
-(3, 'doctor', '', '', '', ''),
+(3, 'Doctor', 'Test', 'Test', '', ''),
 (6, 'sunimal', '', '', '', ''),
 (7, 'amali', '', '', '', ''),
 (8, 'ranjith', '', '', '', ''),
@@ -208,8 +208,7 @@ CREATE TABLE IF NOT EXISTS `patients` (
 --
 
 INSERT INTO `patients` (`user_id`, `username`, `conditions`, `medications`, `emergency_contact_1`, `emergency_contact_2`) VALUES
-(2, 'patient', '', '', '', ''),
-(5, 'sripal', '', '', '', ''),
+(2, 'Patient', 'Test', 'Test', '', ''),
 (26, 'pasan', '', '', '', ''),
 (27, 'nimalka', '', '', '', ''),
 (28, 'saman', '', '', '', ''),
@@ -254,8 +253,8 @@ CREATE TABLE IF NOT EXISTS `pharmacies` (
 --
 
 INSERT INTO `pharmacies` (`pharmacy_id`, `name`, `address`, `latitude`, `longitude`, `contact_information`, `opening_hours`) VALUES
-(1, 'Makandura ', 'sdgdg', 7.32123740, 79.97562890, 'dgdgdgdg', 'sgdgg'),
-(2, 'Kurunegala', 'hgfhfhfgbd', 6.79810277, 79.88577249, '', '');
+(1, 'Health care Pharmacy', '82GG+WMG, Pannala, Sri Lanka', 7.32727043, 80.02667869, '+94779111362', '8AM-11PM'),
+(2, 'Royal Pharmacy', '8XCG+JF4, Makandura, Sri Lanka', 7.32140935, 79.97602782, '+94312299109', '');
 
 -- --------------------------------------------------------
 
@@ -280,10 +279,23 @@ CREATE TABLE IF NOT EXISTS `pharmacists` (
 --
 
 INSERT INTO `pharmacists` (`user_id`, `username`, `pharmacy_id`, `pharmacy_name`, `license_number`) VALUES
-(4, 'pharmacist', 1, '', ''),
+(4, 'Pharmacist', 1, 'Makandura ', 'Test'),
 (55, 'amaraa', NULL, '', ''),
 (56, 'kasunA', NULL, '', ''),
 (57, 'nimalkaa', NULL, '', '');
+
+--
+-- Triggers `pharmacists`
+--
+DROP TRIGGER IF EXISTS `update_pharmacy_name`;
+DELIMITER $$
+CREATE TRIGGER `update_pharmacy_name` BEFORE UPDATE ON `pharmacists` FOR EACH ROW BEGIN
+    IF NEW.pharmacy_id <> OLD.pharmacy_id THEN
+        SET NEW.pharmacy_name = (SELECT name FROM pharmacies WHERE pharmacy_id = NEW.pharmacy_id);
+    END IF;
+END
+$$
+DELIMITER ;
 
 -- --------------------------------------------------------
 
@@ -366,11 +378,10 @@ CREATE TABLE IF NOT EXISTS `users` (
 
 INSERT INTO `users` (`id`, `username`, `password`, `first_name`, `last_name`, `email`, `dob`, `contact`, `role`, `created_at`, `updated_at`, `reset_token`, `reset_token_expires_at`) VALUES
 (1, 'Admin', '$2y$10$kyRHBGkw9Cy6vPFXuKiS.Oz0PLraGBqd8/F9KUy6KHfFhNWdb0ARC', 'Dileepa', 'Liyanage', 'dileepasripal@gmail.com', '1990-02-28', '0766322288', 'admin', '2024-12-11 21:42:45', '2024-12-17 11:04:22', NULL, NULL),
-(2, 'patient', '$2y$10$.Xid85LXUYesDUofWWFto.9U95vRN5y1GJkiQ515Gb.k07olGIFf2', NULL, NULL, NULL, '2024-12-04', '64637387', 'patient', '2024-12-11 22:14:31', '2024-12-11 22:14:31', NULL, NULL),
-(3, 'doctor', '$2y$10$Vj0ejle72QpoGDrcsZRztOAECpGq9mXTVojvCnT3N.XzbabMC8NBC', NULL, NULL, NULL, '2024-12-03', '356777', 'doctor', '2024-12-11 22:18:54', '2024-12-11 22:18:54', NULL, NULL),
-(4, 'pharmacist', '$2y$10$gnBOXHe8scu.xXINj7Zs/upVtDzujHX55UBZG0752M6Yw0EtkqxaS', NULL, NULL, NULL, '2024-12-01', '77544343', 'pharmacist', '2024-12-11 22:19:21', '2024-12-11 22:19:21', NULL, NULL),
-(5, 'sripal', '$2y$10$fGPgObVFOT8FvtHe..uP6ebZEppd.jENdGD6M0M3PgeiRMJw6XMP.', '', '', '', '2024-12-03', '35646464', 'patient', '2024-12-12 15:55:25', '2024-12-12 15:55:25', NULL, NULL),
-(6, 'sunimal', '$2y$10$fGPgObVFOT8FvtHe..uP6ebZEppd.jENdGD6M0M3PgeiRMJw6XMP.', 'Sunimal', 'Perera', 'sunimal@example.com', '1980-05-10', '0771234567', 'doctor', '2024-12-12 17:26:01', '2024-12-12 17:26:01', NULL, NULL),
+(2, 'Patient', '$2y$10$.Xid85LXUYesDUofWWFto.9U95vRN5y1GJkiQ515Gb.k07olGIFf2', 'Test', 'Test', 'patient@gmail.com', '2024-12-04', '1646373872', 'patient', '2024-12-11 22:14:31', '2024-12-18 03:24:31', NULL, NULL),
+(3, 'Doctor', '$2y$10$Vj0ejle72QpoGDrcsZRztOAECpGq9mXTVojvCnT3N.XzbabMC8NBC', 'Test', 'Test', 'doctor@gmail.com', '2024-12-03', '1231231231', 'doctor', '2024-12-11 22:18:54', '2024-12-18 03:21:59', NULL, NULL),
+(4, 'Pharmacist', '$2y$10$gnBOXHe8scu.xXINj7Zs/upVtDzujHX55UBZG0752M6Yw0EtkqxaS', 'Test', 'Test', 'pharmacist@gmail.com', '2024-12-01', '7754434315', 'pharmacist', '2024-12-11 22:19:21', '2024-12-18 03:27:02', NULL, NULL),
+(6, 'sunimal', '$2y$10$3p18TtEUKgZwSWNAoc3wxeEzFiBF70mysxRJqqZSHNv2gpe00bx16', 'Sunimal', 'Perera', 'sunimal@example.com', '1980-05-10', '0771234567', 'doctor', '2024-12-12 17:26:01', '2024-12-18 05:28:08', '905d415e5619dc0ff78f06c11ee7023a42d822ac798146a51b5edacaedfa7548', NULL),
 (7, 'amali', '$2y$10$fGPgObVFOT8FvtHe..uP6ebZEppd.jENdGD6M0M3PgeiRMJw6XMP.', 'Amali', 'Silva', 'amali@example.com', '1985-09-15', '0779876543', 'doctor', '2024-12-12 17:26:01', '2024-12-12 17:26:01', NULL, NULL),
 (8, 'ranjith', '$2y$10$fGPgObVFOT8FvtHe..uP6ebZEppd.jENdGD6M0M3PgeiRMJw6XMP.', 'Ranjith', 'Fernando', 'ranjith@example.com', '1978-02-28', '0765432109', 'doctor', '2024-12-12 17:26:01', '2024-12-12 17:26:01', NULL, NULL),
 (9, 'nadeesha', '$2y$10$fGPgObVFOT8FvtHe..uP6ebZEppd.jENdGD6M0M3PgeiRMJw6XMP.', 'Nadeesha', 'Kumari', 'nadeesha@example.com', '1982-07-20', '0714329876', 'doctor', '2024-12-12 17:26:01', '2024-12-12 17:26:01', NULL, NULL),
@@ -442,8 +453,7 @@ DELIMITER ;
 -- Constraints for table `doctors`
 --
 ALTER TABLE `doctors`
-  ADD CONSTRAINT `FK_doctors_user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`),
-  ADD CONSTRAINT `FK_doctors_username` FOREIGN KEY (`username`) REFERENCES `users` (`username`);
+  ADD CONSTRAINT `FK_doctors_username_new` FOREIGN KEY (`username`) REFERENCES `users` (`username`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Constraints for table `notifications`
@@ -455,16 +465,14 @@ ALTER TABLE `notifications`
 -- Constraints for table `patients`
 --
 ALTER TABLE `patients`
-  ADD CONSTRAINT `FK_patients_user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`),
-  ADD CONSTRAINT `FK_patients_username` FOREIGN KEY (`username`) REFERENCES `users` (`username`);
+  ADD CONSTRAINT `FK_patients_username_new` FOREIGN KEY (`username`) REFERENCES `users` (`username`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Constraints for table `pharmacists`
 --
 ALTER TABLE `pharmacists`
   ADD CONSTRAINT `FK_pharmacists_pharmacy_id` FOREIGN KEY (`pharmacy_id`) REFERENCES `pharmacies` (`pharmacy_id`),
-  ADD CONSTRAINT `FK_pharmacists_user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`),
-  ADD CONSTRAINT `FK_pharmacists_username` FOREIGN KEY (`username`) REFERENCES `users` (`username`);
+  ADD CONSTRAINT `FK_pharmacists_username_new` FOREIGN KEY (`username`) REFERENCES `users` (`username`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Constraints for table `prescriptions`

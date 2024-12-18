@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1:3306
--- Generation Time: Dec 17, 2024 at 12:13 PM
+-- Generation Time: Dec 17, 2024 at 05:41 AM
 -- Server version: 8.0.29
 -- PHP Version: 8.2.18
 
@@ -166,7 +166,7 @@ CREATE TABLE IF NOT EXISTS `notifications` (
   `reference_id` int DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `user_id` (`user_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `notifications`
@@ -174,16 +174,13 @@ CREATE TABLE IF NOT EXISTS `notifications` (
 
 INSERT INTO `notifications` (`id`, `user_id`, `type`, `message`, `is_read`, `created_at`, `reference_id`) VALUES
 (1, 2, 'prescription', 'New prescription added for: sdgdggdf', 1, '2024-12-17 04:19:30', 1),
-(2, 4, 'refill_request', 'Patient patient has requested a refill for prescription #9.', 1, '2024-12-17 05:23:56', 9),
-(3, 4, 'refill_request', 'Patient patient has requested a refill for prescription #9.', 1, '2024-12-17 05:25:04', 9),
+(2, 4, 'refill_request', 'Patient patient has requested a refill for prescription #9.', 0, '2024-12-17 05:23:56', 9),
+(3, 4, 'refill_request', 'Patient patient has requested a refill for prescription #9.', 0, '2024-12-17 05:25:04', 9),
 (4, 2, 'refill_approved', 'Your refill request for sdgdggdf has been approved.', 0, '2024-12-17 05:26:06', NULL),
 (5, 2, 'refill_approved', 'Your refill request for sdgdggdf has been approved.', 0, '2024-12-17 05:32:57', NULL),
-(6, 4, 'refill_request', 'Patient patient has requested a refill for prescription #9.', 1, '2024-12-17 05:37:00', 9),
-(7, 4, 'refill_request', 'Patient patient has requested a refill for prescription #9.', 1, '2024-12-17 05:37:02', 9),
-(8, 4, 'refill_request', 'Patient patient has requested a refill for prescription #9.', 1, '2024-12-17 05:37:04', 9),
-(9, 2, 'refill_approved', 'Your refill request for sdgdggdf has been approved.', 0, '2024-12-17 07:25:04', NULL),
-(10, 2, 'refill_approved', 'Your refill request for sdgdggdf has been approved.', 0, '2024-12-17 07:29:36', 9),
-(11, 2, 'info', 'Test1', 0, '2024-12-17 07:33:22', NULL);
+(6, 4, 'refill_request', 'Patient patient has requested a refill for prescription #9.', 0, '2024-12-17 05:37:00', 9),
+(7, 4, 'refill_request', 'Patient patient has requested a refill for prescription #9.', 0, '2024-12-17 05:37:02', 9),
+(8, 4, 'refill_request', 'Patient patient has requested a refill for prescription #9.', 0, '2024-12-17 05:37:04', 9);
 
 -- --------------------------------------------------------
 
@@ -317,8 +314,8 @@ CREATE TABLE IF NOT EXISTS `prescriptions` (
 --
 
 INSERT INTO `prescriptions` (`id`, `user_id`, `medication_name`, `dosage`, `frequency`, `start_date`, `end_date`, `special_instructions`, `doctor_id`, `pharmacy_id`, `refill_status`, `created_at`, `updated_at`, `request_status`) VALUES
-(9, 2, 'sdgdggdf', '5', '4', '2024-12-18', '2024-12-20', '', 3, 1, 'refilled', '2024-12-17 04:17:59', '2024-12-17 07:29:36', 'approved'),
-(10, 2, 'sdgdggdf', '5', '4', '2024-12-18', '2024-12-20', '', 3, 1, 'refilled', '2024-12-17 04:19:30', '2024-12-17 07:25:04', 'approved');
+(9, 2, 'sdgdggdf', '5', '4', '2024-12-18', '2024-12-20', '', 3, 1, 'refill_requested', '2024-12-17 04:17:59', '2024-12-17 05:39:03', 'pending'),
+(10, 2, 'sdgdggdf', '5', '4', '2024-12-18', '2024-12-20', '', 3, 1, 'refill_requested', '2024-12-17 04:19:30', '2024-12-17 05:39:17', 'pending');
 
 -- --------------------------------------------------------
 
@@ -365,7 +362,7 @@ CREATE TABLE IF NOT EXISTS `users` (
 --
 
 INSERT INTO `users` (`id`, `username`, `password`, `first_name`, `last_name`, `email`, `dob`, `contact`, `role`, `created_at`, `updated_at`, `reset_token`, `reset_token_expires_at`) VALUES
-(1, 'Admin', '$2y$10$kyRHBGkw9Cy6vPFXuKiS.Oz0PLraGBqd8/F9KUy6KHfFhNWdb0ARC', 'Dileepa', 'Liyanage', 'dileepasripal@gmail.com', '1990-02-28', '0766322288', 'admin', '2024-12-11 21:42:45', '2024-12-17 11:04:22', NULL, NULL),
+(1, 'dileepa', '$2y$10$YXOtcDF//MeaYM1q68o62upmjMlkNtH3btcsPy8IQ8zAluQi13Bmy', NULL, NULL, NULL, '1990-02-28', '0766322288', 'admin', '2024-12-11 21:42:45', '2024-12-11 21:43:03', NULL, NULL),
 (2, 'patient', '$2y$10$.Xid85LXUYesDUofWWFto.9U95vRN5y1GJkiQ515Gb.k07olGIFf2', NULL, NULL, NULL, '2024-12-04', '64637387', 'patient', '2024-12-11 22:14:31', '2024-12-11 22:14:31', NULL, NULL),
 (3, 'doctor', '$2y$10$Vj0ejle72QpoGDrcsZRztOAECpGq9mXTVojvCnT3N.XzbabMC8NBC', NULL, NULL, NULL, '2024-12-03', '356777', 'doctor', '2024-12-11 22:18:54', '2024-12-11 22:18:54', NULL, NULL),
 (4, 'pharmacist', '$2y$10$gnBOXHe8scu.xXINj7Zs/upVtDzujHX55UBZG0752M6Yw0EtkqxaS', NULL, NULL, NULL, '2024-12-01', '77544343', 'pharmacist', '2024-12-11 22:19:21', '2024-12-11 22:19:21', NULL, NULL),

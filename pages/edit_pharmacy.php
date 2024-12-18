@@ -50,7 +50,7 @@ if(isset($_POST["pharmacy_id"]) && !empty($_POST["pharmacy_id"])){
             $stmt->bind_param("ssddssi", $name, $address, $latitude, $longitude, $contact_information, $opening_hours, $pharmacy_id);
             
             if($stmt->execute()){
-                header("location: ?page=manage_pharmacies");
+                header("location: manage_pharmacies");
                 exit();
             } else{
                 echo "Error updating pharmacy: " . $conn->error;
@@ -105,6 +105,7 @@ if(isset($_POST["pharmacy_id"]) && !empty($_POST["pharmacy_id"])){
     <title>Manage Pharmacies</title>
     <title>User Management</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css?family=Roboto:400,700&display=swap" rel="stylesheet">
@@ -240,7 +241,7 @@ if(isset($_POST["pharmacy_id"]) && !empty($_POST["pharmacy_id"])){
             <h3 class="card-title">Edit Pharmacy</h3>
         </div>
         <div class="card-body">
-            <form action="<?php echo '?page=edit_pharmacy'; ?>" method="post">
+            <form action="<?php echo 'edit_pharmacy'; ?>" method="post">
                 <div class="row">
                     <div class="col-md-6">
                         <div class="form-group">
@@ -280,7 +281,7 @@ if(isset($_POST["pharmacy_id"]) && !empty($_POST["pharmacy_id"])){
                     <button type="submit" class="btn btn-primary">
                         <i class="fas fa-save"></i> Save Changes
                     </button>
-                    <a href="?page=manage_pharmacies" class="btn btn-secondary">
+                    <a href="manage_pharmacies" class="btn btn-secondary">
                         <i class="fas fa-times"></i> Cancel
                     </a>
                 </div>
