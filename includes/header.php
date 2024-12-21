@@ -101,7 +101,19 @@ if (isset($_SESSION["loggedin"]) && $_SESSION["loggedin"] === true && isset($con
             font-size: 0.85em;
             color: #6c757d;
         }
+        .toast-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1050;
+}
+
+.medication-reminder {
+    background-color: #cce5ff;
+    border-left: 4px solid #004085;
+}
     </style>
+    <script src="../assets/js/notifications.js"></script>
 </head>
 <body>
     <header>
@@ -209,5 +221,76 @@ if (isset($_SESSION["loggedin"]) && $_SESSION["loggedin"] === true && isset($con
     <?php endif; ?>
 
     </main>
+    <div class="toast-container"></div>
+<audio id="notificationSound" preload="auto">
+    <source src="../assets/notification.mp3" type="audio/mpeg">
+</audio>
+
+<script>
+$(document).ready(function() {
+    let lastCheck = new Date().toISOString();
+    
+    function checkNotifications() {
+        $.ajax({
+            url: '../includes/check_notifications.php',
+            data: { last_check: lastCheck },
+            success: function(data) {
+                if(data.hasNewNotifications) {
+                    updateNotificationBadge(data.count);
+                    handleNewNotifications(data.notifications);
+                    lastCheck = data.timestamp;
+                }
+            }
+        });
+    }
+
+    function handleNewNotifications(notifications) {
+        notifications.forEach(notification => {
+            if(notification.type === 'medication_reminder') {
+                showMedicationReminder(notification);
+                playNotificationSound();
+            }
+        });
+    }
+
+    function showMedicationReminder(notification) {
+        const toast = `
+            <div class="toast medication-reminder" role="alert" aria-live="assertive" aria-atomic="true" data-autohide="false">
+                <div class="toast-header">
+                    <i class="fas fa-pills mr-2"></i>
+                    <strong class="mr-auto">Medication Reminder</strong>
+                    <small class="text-muted">just now</small>
+                    <button type="button" class="ml-2 mb-1 close" data-dismiss="toast">&times;</button>
+                </div>
+                <div class="toast-body">
+                    ${notification.message}
+                    <div class="mt-2">
+                        <button class="btn btn-primary btn-sm confirm-medication" 
+                                data-id="${notification.id}">
+                            Confirm Taken
+                        </button>
+                    </div>
+                </div>
+            </div>`;
+
+        $('.toast-container').append(toast);
+        $('.toast').toast('show');
+    }
+
+    function playNotificationSound() {
+        document.getElementById('notificationSound').play();
+    }
+
+    // Check notifications every minute
+    setInterval(checkNotifications, 60000);
+    
+    // Handle medication confirmation
+    $(document).on('click', '.confirm-medication', function() {
+        const notificationId = $(this).data('id');
+        $.post('../includes/confirm_medication.php', { id: notificationId })
+            .done(() => $(this).closest('.toast').toast('hide'));
+    });
+});
+</script>
 </body>
 </html>
